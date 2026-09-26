@@ -87,7 +87,7 @@ export default function CountUp({
   }, [value, duration]);
 
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} suppressHydrationWarning className={className}>
       {display}
     </span>
   );

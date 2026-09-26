@@ -141,6 +141,33 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
       heroCtaText,
       heroCtaSubtext,
 
+      statsShow,
+      statsItems,
+
+      confidenceShow,
+      confidenceBadge,
+      confidenceHeading,
+      confidenceDescription,
+      confidenceCards,
+
+      curriculumFlexShow,
+      curriculumBadge,
+      curriculumHeading,
+      curriculumDescription,
+      curriculumBadgesList,
+      curriculumChecklist,
+      flexibleBadge,
+      flexibleHeading,
+      flexibleDescription,
+      flexibleFeatures,
+
+      moreAboutShow,
+      moreAboutHeading,
+      moreAboutFeatures,
+      testimonialsHeading,
+      testimonialsHeadingHighlight,
+      testimonialsList,
+
       whySubheader,
       whyHeading,
       whyDescription,
@@ -179,7 +206,13 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
       ctaHeading,
       ctaDescription,
       ctaButtonText,
-      ctaSubtext
+      ctaSubtext,
+
+      metaTitle,
+      metaDescription,
+      metaKeywords,
+      canonicalUrl,
+      indexPage
     } = req.body;
 
     const settings = await TrialLanding.findById(req.params.id);
@@ -224,6 +257,46 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
     if (heroBullets !== undefined) settings.heroBullets = parseField(heroBullets);
     if (heroCtaText !== undefined) settings.heroCtaText = heroCtaText;
     if (heroCtaSubtext !== undefined) settings.heroCtaSubtext = heroCtaSubtext;
+
+    // Update Stats Section
+    if (statsShow !== undefined) {
+      settings.statsShow = statsShow === "true" || statsShow === true;
+    }
+    if (statsItems !== undefined) settings.statsItems = parseField(statsItems);
+
+    // Update Confidence & Communication Section
+    if (confidenceShow !== undefined) {
+      settings.confidenceShow = confidenceShow === "true" || confidenceShow === true;
+    }
+    if (confidenceBadge !== undefined) settings.confidenceBadge = confidenceBadge;
+    if (confidenceHeading !== undefined) settings.confidenceHeading = confidenceHeading;
+    if (confidenceDescription !== undefined) settings.confidenceDescription = confidenceDescription;
+    if (confidenceCards !== undefined) settings.confidenceCards = parseField(confidenceCards);
+
+    // Update Curriculum & Flexible Learning Section
+    if (curriculumFlexShow !== undefined) {
+      settings.curriculumFlexShow = curriculumFlexShow === "true" || curriculumFlexShow === true;
+    }
+    if (curriculumBadge !== undefined) settings.curriculumBadge = curriculumBadge;
+    if (curriculumHeading !== undefined) settings.curriculumHeading = curriculumHeading;
+    if (curriculumDescription !== undefined) settings.curriculumDescription = curriculumDescription;
+    if (curriculumBadgesList !== undefined) settings.curriculumBadgesList = parseField(curriculumBadgesList);
+    if (curriculumChecklist !== undefined) settings.curriculumChecklist = parseField(curriculumChecklist);
+
+    if (flexibleBadge !== undefined) settings.flexibleBadge = flexibleBadge;
+    if (flexibleHeading !== undefined) settings.flexibleHeading = flexibleHeading;
+    if (flexibleDescription !== undefined) settings.flexibleDescription = flexibleDescription;
+    if (flexibleFeatures !== undefined) settings.flexibleFeatures = parseField(flexibleFeatures);
+
+    // Update More About Arabic Juniors & Testimonials Section
+    if (moreAboutShow !== undefined) {
+      settings.moreAboutShow = moreAboutShow === "true" || moreAboutShow === true;
+    }
+    if (moreAboutHeading !== undefined) settings.moreAboutHeading = moreAboutHeading;
+    if (moreAboutFeatures !== undefined) settings.moreAboutFeatures = parseField(moreAboutFeatures);
+    if (testimonialsHeading !== undefined) settings.testimonialsHeading = testimonialsHeading;
+    if (testimonialsHeadingHighlight !== undefined) settings.testimonialsHeadingHighlight = testimonialsHeadingHighlight;
+    if (testimonialsList !== undefined) settings.testimonialsList = parseField(testimonialsList);
 
     // Update Text Fields (Why)
     if (whySubheader !== undefined) settings.whySubheader = whySubheader;
@@ -273,6 +346,15 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
     if (ctaDescription !== undefined) settings.ctaDescription = ctaDescription;
     if (ctaButtonText !== undefined) settings.ctaButtonText = ctaButtonText;
     if (ctaSubtext !== undefined) settings.ctaSubtext = ctaSubtext;
+
+    // Update SEO Meta Fields
+    if (metaTitle !== undefined) settings.metaTitle = metaTitle;
+    if (metaDescription !== undefined) settings.metaDescription = metaDescription;
+    if (metaKeywords !== undefined) settings.metaKeywords = metaKeywords;
+    if (canonicalUrl !== undefined) settings.canonicalUrl = canonicalUrl;
+    if (indexPage !== undefined) {
+      settings.indexPage = indexPage === "true" || indexPage === true;
+    }
 
     // Handle Image Uploads
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
@@ -331,6 +413,34 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
       const uploaded = await uploadToCloudinary(files["curriculaImage"][0]);
       settings.curriculaImageUrl = uploaded.secure_url;
       settings.curriculaImagePublicId = uploaded.public_id;
+    }
+
+    // 5. Flexible Learning Student Image
+    if (files?.["flexibleImage"]?.[0]) {
+      if (settings.flexibleImagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(settings.flexibleImagePublicId);
+        } catch (err) {
+          console.error("Failed to delete previous flexible student image:", err);
+        }
+      }
+      const uploaded = await uploadToCloudinary(files["flexibleImage"][0]);
+      settings.flexibleImageUrl = uploaded.secure_url;
+      settings.flexibleImagePublicId = uploaded.public_id;
+    }
+
+    // 6. SEO Open Graph Image
+    if (files?.["ogImage"]?.[0]) {
+      if (settings.ogImagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(settings.ogImagePublicId);
+        } catch (err) {
+          console.error("Failed to delete previous OG image:", err);
+        }
+      }
+      const uploaded = await uploadToCloudinary(files["ogImage"][0]);
+      settings.ogImageUrl = uploaded.secure_url;
+      settings.ogImagePublicId = uploaded.public_id;
     }
 
     await settings.save();

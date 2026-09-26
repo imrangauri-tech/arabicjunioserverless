@@ -1,12 +1,43 @@
+"use client";
+
 import { images } from "@/constants/images";
 import Image from "next/image";
 import React from "react";
 import NewsletterForm from "./NewsletterForm";
+import { usePathname } from "next/navigation";
 
 const Newsletter = () => {
+  const pathname = usePathname();
+  const isLandingPage =
+    pathname?.includes("trial-landing") ||
+    (pathname &&
+      pathname !== "/" &&
+      ![
+        "/about-us",
+        "/blogs",
+        "/careers",
+        "/contact-us",
+        "/faq",
+        "/our-teachers",
+        "/pricing",
+        "/privacy-policy",
+        "/register",
+        "/student-registration",
+        "/teacher-registration",
+        "/terms-and-conditions",
+        "/welcome",
+      ].some((p) => pathname.startsWith(p)));
+
   return (
     <React.Fragment>
-      <section aria-describedby="newsletter" className="py-16">
+      <section
+        aria-describedby="newsletter"
+        className={
+          isLandingPage
+            ? "pt-[16px] md:pt-[24px] pb-16 bg-[#fffdfb]"
+            : "py-16"
+        }
+      >
         <div className="container">
           <div
             aria-describedby="main-wrapper"

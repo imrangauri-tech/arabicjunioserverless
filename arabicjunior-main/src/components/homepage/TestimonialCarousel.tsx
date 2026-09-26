@@ -129,6 +129,7 @@ const TestimonialCarousel = ({
             <button
               key={index}
               type="button"
+              suppressHydrationWarning
               aria-label={`Go to ${name} ${index + 1}`}
               aria-current={index === selected}
               onClick={() => api?.scrollTo(index)}
@@ -245,6 +246,7 @@ const VideoCard = ({
       <button
         type="button"
         onClick={onPlay}
+        suppressHydrationWarning
         aria-label={`Play video testimonial from ${testimonial.authorName}`}
         className="group relative w-full aspect-video mb-5 rounded-xl overflow-hidden bg-neutral-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
       >

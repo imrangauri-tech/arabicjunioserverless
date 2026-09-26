@@ -77,6 +77,7 @@ const ArabicCurriculumn = () => {
                         onClick={() => toggleItem(item.key)}
                         aria-expanded={isOpen}
                         aria-controls={panelId}
+                        suppressHydrationWarning
                         className="w-full flex items-center gap-x-6 xl:gap-x-8 text-left"
                       >
                         <span

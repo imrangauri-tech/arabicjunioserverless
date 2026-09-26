@@ -30,8 +30,60 @@ import {
   ExternalLink,
   Layers,
   LayoutGrid,
-  Sparkles
+  Sparkles,
+  BarChart2,
+  Star,
+  MessageCircle,
+  Globe,
+  Share2
 } from "lucide-react";
+
+type StatCardItem = {
+  key?: string;
+  value: string;
+  label: string;
+  desc: string;
+  color: string;
+  bgColor: string;
+  borderColor?: string;
+  icon: string;
+};
+
+type ConfidenceCardItem = {
+  arabicWord: string;
+  englishLabel: string;
+  description: string;
+  color: string;
+  bgColor: string;
+  borderColor?: string;
+  icon: string;
+};
+
+type FlexibleFeatureItem = {
+  title: string;
+  subtext: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+};
+
+type MoreAboutFeatureItem = {
+  title: string;
+  description: string;
+  detailedText?: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+};
+
+type TestimonialReviewItem = {
+  name: string;
+  role: string;
+  quote: string;
+  rating: number;
+  avatarUrl: string;
+  avatarPublicId?: string;
+};
 
 type WhyCardItem = {
   title: string;
@@ -101,11 +153,48 @@ export default function TrialLandingAdminPage() {
   const [newSlug, setNewSlug] = useState("");
 
   // Editor Tabs for Dynamic Page Edit
-  const [activeTab, setActiveTab] = useState<"hero" | "why" | "onboarding" | "skills" | "choose" | "faq" | "cta">("hero");
+  const [activeTab, setActiveTab] = useState<"hero" | "stats" | "confidence" | "curriculumFlex" | "moreAbout" | "why" | "onboarding" | "skills" | "choose" | "faq" | "cta" | "seo">("hero");
 
   // Page Editor States
   const [pageTitle, setPageTitle] = useState("");
   const [slug, setSlug] = useState("");
+
+  // Stats Section State
+  const [statsShow, setStatsShow] = useState(true);
+  const [statsItems, setStatsItems] = useState<StatCardItem[]>([]);
+
+  // Confidence Section State
+  const [confidenceShow, setConfidenceShow] = useState(true);
+  const [confidenceBadge, setConfidenceBadge] = useState("");
+  const [confidenceHeading, setConfidenceHeading] = useState("");
+  const [confidenceDescription, setConfidenceDescription] = useState("");
+  const [confidenceCards, setConfidenceCards] = useState<ConfidenceCardItem[]>([]);
+
+  // Curriculum & Flexible Learning Section State
+  const [curriculumFlexShow, setCurriculumFlexShow] = useState(true);
+  const [curriculumBadge, setCurriculumBadge] = useState("");
+  const [curriculumHeading, setCurriculumHeading] = useState("");
+  const [curriculumDescription, setCurriculumDescription] = useState("");
+  const [curriculumBadgesList, setCurriculumBadgesList] = useState<string[]>([]);
+  const [curriculumChecklist, setCurriculumChecklist] = useState<string[]>([]);
+
+  const [flexibleBadge, setFlexibleBadge] = useState("");
+  const [flexibleHeading, setFlexibleHeading] = useState("");
+  const [flexibleDescription, setFlexibleDescription] = useState("");
+  const [flexibleFeatures, setFlexibleFeatures] = useState<FlexibleFeatureItem[]>([]);
+
+  const [flexibleImageUrl, setFlexibleImageUrl] = useState("");
+  const [flexibleImageFile, setFlexibleImageFile] = useState<File | null>(null);
+  const [flexibleImagePreview, setFlexibleImagePreview] = useState("");
+
+  // More About Arabic Juniors & Testimonials State
+  const [moreAboutShow, setMoreAboutShow] = useState(true);
+  const [moreAboutHeading, setMoreAboutHeading] = useState("");
+  const [moreAboutFeatures, setMoreAboutFeatures] = useState<MoreAboutFeatureItem[]>([]);
+
+  const [testimonialsHeading, setTestimonialsHeading] = useState("");
+  const [testimonialsHeadingHighlight, setTestimonialsHeadingHighlight] = useState("");
+  const [testimonialsList, setTestimonialsList] = useState<TestimonialReviewItem[]>([]);
 
   // Hero Section State
   const [heroBadgeText, setHeroBadgeText] = useState("");
@@ -178,6 +267,16 @@ export default function TrialLandingAdminPage() {
   const [ctaImageFile, setCtaImageFile] = useState<File | null>(null);
   const [ctaImagePreview, setCtaImagePreview] = useState("");
 
+  // SEO & Social Meta States
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [metaKeywords, setMetaKeywords] = useState("");
+  const [canonicalUrl, setCanonicalUrl] = useState("");
+  const [indexPage, setIndexPage] = useState(true);
+  const [ogImageUrl, setOgImageUrl] = useState("");
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [ogImagePreview, setOgImagePreview] = useState("");
+
   const fetchPagesList = async () => {
     setLoadingList(true);
     try {
@@ -237,6 +336,246 @@ export default function TrialLandingAdminPage() {
         setHeroImageUrl(d.heroImageUrl || "");
         setHeroImagePreview(d.heroImageUrl || "");
 
+        // Stats
+        setStatsShow(d.statsShow !== false);
+        setStatsItems(d.statsItems && d.statsItems.length > 0 ? d.statsItems : [
+          {
+            key: "students",
+            value: "3,500+",
+            label: "Happy Students",
+            desc: "Students from different schools learning Arabic with confidence.",
+            color: "#FB6238",
+            bgColor: "#FFF2EE",
+            borderColor: "#FFD0BD",
+            icon: "Users"
+          },
+          {
+            key: "teachers",
+            value: "200+",
+            label: "Expert Teachers",
+            desc: "Qualified and experienced Arabic teachers dedicated to your success.",
+            color: "#7C3AED",
+            bgColor: "#F3EEFF",
+            borderColor: "#DDD6FE",
+            icon: "GraduationCap"
+          },
+          {
+            key: "classes",
+            value: "25,000+",
+            label: "Classes Conducted",
+            desc: "Interactive live classes delivered with engaging and effective methods.",
+            color: "#0062FC",
+            bgColor: "#EBF4FF",
+            borderColor: "#BFDBFE",
+            icon: "MonitorPlay"
+          },
+          {
+            key: "schools",
+            value: "50+",
+            label: "Students from Schools",
+            desc: "Students from various schools across the UAE and beyond.",
+            color: "#E05493",
+            bgColor: "#FDF0F6",
+            borderColor: "#FBCFE8",
+            icon: "School"
+          }
+        ]);
+
+        // Confidence
+        setConfidenceShow(d.confidenceShow !== false);
+        setConfidenceBadge(d.confidenceBadge || "Why Choose Arabic Juniors?");
+        setConfidenceHeading(d.confidenceHeading || "Build Confidence.\nImprove Communication.");
+        setConfidenceDescription(d.confidenceDescription || "Our teaching approach focuses on real life communication rather than memorization. We help students improve speaking, reading, writing and listening through interactive lessons and customized Arabic study plans.");
+        setConfidenceCards(d.confidenceCards && d.confidenceCards.length > 0 ? d.confidenceCards : [
+          {
+            arabicWord: "تحدّث",
+            englishLabel: "Speak",
+            description: "Improve speaking skills through real conversations",
+            color: "#FB6238",
+            bgColor: "#FFF2EE",
+            borderColor: "#FFD0BD",
+            icon: "MessagesSquare"
+          },
+          {
+            arabicWord: "أقرأ",
+            englishLabel: "Read",
+            description: "Enhance reading skills step by step with themed texts",
+            color: "#EA580C",
+            bgColor: "#FFF7ED",
+            borderColor: "#FED7AA",
+            icon: "BookOpen"
+          },
+          {
+            arabicWord: "اكتب",
+            englishLabel: "Write",
+            description: "Build strong writing skills with fun practice",
+            color: "#7C3AED",
+            bgColor: "#F3EEFF",
+            borderColor: "#DDD6FE",
+            icon: "Pencil"
+          },
+          {
+            arabicWord: "استمع",
+            englishLabel: "Listen",
+            description: "Develop listening skills with audio practice",
+            color: "#E05493",
+            bgColor: "#FDF0F6",
+            borderColor: "#FBCFE8",
+            icon: "Headphones"
+          }
+        ]);
+
+        // Curriculum & Flexibility
+        setCurriculumFlexShow(d.curriculumFlexShow !== false);
+        setCurriculumBadge(d.curriculumBadge || "UAE School Curriculum Expert");
+        setCurriculumHeading(d.curriculumHeading || "Aligned with UAE School Curriculum");
+        setCurriculumDescription(d.curriculumDescription || "We specialize in Arabic for UAE schools (MOE Curriculum) and also support students from CBSE, British, IB and American Curriculums.");
+        setCurriculumBadgesList(
+          d.curriculumBadgesList && d.curriculumBadgesList.length > 0
+            ? d.curriculumBadgesList.map((b: any) => typeof b === "string" ? b : b.name)
+            : ["UAE MOE", "CBSE", "British", "IB", "American"]
+        );
+        setCurriculumChecklist(
+          d.curriculumChecklist && d.curriculumChecklist.length > 0
+            ? d.curriculumChecklist
+            : [
+                "Grade KG to 12",
+                "Reading, Writing, Speaking & Grammar",
+                "Textbook Support & Exam Preparation",
+                "Personalized Learning Plans",
+                "Regular Assessments & Progress Reports"
+              ]
+        );
+
+        setFlexibleBadge(d.flexibleBadge || "Flexible Learning");
+        setFlexibleHeading(d.flexibleHeading || "Learn Anytime, Anywhere");
+        setFlexibleDescription(d.flexibleDescription || "Our online Arabic classes are designed to fit your schedule. That's why we offer flexible learning options that make it easy to learn from your home and at your pace.");
+        setFlexibleFeatures(
+          d.flexibleFeatures && d.flexibleFeatures.length > 0
+            ? d.flexibleFeatures
+            : [
+                {
+                  title: "Flexible Class Scheduling",
+                  subtext: "Choose timings that fit your routine",
+                  icon: "Calendar",
+                  color: "#FB6238",
+                  bgColor: "#FFF2EE"
+                },
+                {
+                  title: "One-to-One & Group Classes",
+                  subtext: "Select the learning style that suits you",
+                  icon: "Users",
+                  color: "#7C3AED",
+                  bgColor: "#F3EEFF"
+                },
+                {
+                  title: "Live Interactive Classes",
+                  subtext: "Learn with live teachers using fun methods",
+                  icon: "Video",
+                  color: "#E05493",
+                  bgColor: "#FDF0F6"
+                },
+                {
+                  title: "Progress Tracking",
+                  subtext: "Regular feedback and progress updates",
+                  icon: "BarChart3",
+                  color: "#0062FC",
+                  bgColor: "#EBF4FF"
+                }
+              ]
+        );
+
+        setFlexibleImageUrl(d.flexibleImageUrl || "/online_learning_girl.jpg");
+        setFlexibleImagePreview(d.flexibleImageUrl || "/online_learning_girl.jpg");
+        setFlexibleImageFile(null);
+
+        // More About & Testimonials
+        setMoreAboutShow(d.moreAboutShow !== false);
+        setMoreAboutHeading(d.moreAboutHeading || "More About Arabic Juniors");
+        setMoreAboutFeatures(
+          d.moreAboutFeatures && d.moreAboutFeatures.length > 0
+            ? d.moreAboutFeatures
+            : [
+                {
+                  title: "Native & Experienced Arabic Teachers",
+                  description: "Learn from native and certified Arabic teachers with proven teaching experience.",
+                  detailedText: "Our certified native teachers are specialists in early childhood and school Arabic education, ensuring natural pronunciation, fluency, and deep cultural appreciation.",
+                  icon: "GraduationCap",
+                  color: "#0062FC",
+                  bgColor: "#EBF4FF"
+                },
+                {
+                  title: "One-to-One Attention",
+                  description: "We ensure personalized attention to help every student excel.",
+                  detailedText: "Every child learns at their own pace. Dedicated 1-on-1 interaction allows our tutors to adapt lessons instantly to your child's unique learning needs.",
+                  icon: "Users",
+                  color: "#7C3AED",
+                  bgColor: "#F3EEFF"
+                },
+                {
+                  title: "Arabic Classes for Kids",
+                  description: "Fun and engaging classes specially designed for kids with age-appropriate activities and materials.",
+                  detailedText: "We turn Arabic lessons into an exciting adventure with interactive digital whiteboards, gamified vocabulary quizzes, and cheerful storytelling.",
+                  icon: "Monitor",
+                  color: "#00A389",
+                  bgColor: "#E6F7F0"
+                },
+                {
+                  title: "Arabic Courses for Beginners",
+                  description: "Step-by-step courses that build a strong foundation in Arabic for absolute beginners.",
+                  detailedText: "Starting from alphabet sounds and letter connections to full conversational confidence, structured step-by-step guidance ensures steady mastery.",
+                  icon: "School",
+                  color: "#E05493",
+                  bgColor: "#FDF0F6"
+                },
+                {
+                  title: "Flexible Online Arabic Classes",
+                  description: "Choose class timings that suit your schedule with morning, evening or weekend slots.",
+                  detailedText: "Select class hours that blend smoothly with school routines, extra-curriculars, and family life with simple rescheduling options.",
+                  icon: "MonitorPlay",
+                  color: "#0062FC",
+                  bgColor: "#EBF4FF"
+                },
+                {
+                  title: "Continuous Learning & Progress Support",
+                  description: "We are always here to support students and parents at every step of the journey.",
+                  detailedText: "Receive regular feedback reports, teacher guidance, exam preparation help, and school curriculum alignment checks throughout the term.",
+                  icon: "HeartHandshake",
+                  color: "#FB6238",
+                  bgColor: "#FFF2EE"
+                }
+              ]
+        );
+        setTestimonialsHeading(d.testimonialsHeading || "What Parents Say About");
+        setTestimonialsHeadingHighlight(d.testimonialsHeadingHighlight || "Arabic Juniors");
+        setTestimonialsList(
+          d.testimonialsList && d.testimonialsList.length > 0
+            ? d.testimonialsList
+            : [
+                {
+                  name: "Fatima Al Mansoori",
+                  role: "Parent, Dubai",
+                  quote: "Arabic Juniors has been a wonderful experience for my son. His reading and speaking skills improved a lot!",
+                  rating: 5,
+                  avatarUrl: "/parent_fatima.jpg"
+                },
+                {
+                  name: "Ahmed Khan",
+                  role: "Parent, Sharjah",
+                  quote: "The teachers are very supportive and the classes are interactive. Highly recommended!",
+                  rating: 5,
+                  avatarUrl: "/parent_ahmed.jpg"
+                },
+                {
+                  name: "Sara Mohamed",
+                  role: "Parent, Abu Dhabi",
+                  quote: "Flexible timings and personalized support helped my daughter achieve excellent results.",
+                  rating: 5,
+                  avatarUrl: "/parent_sara.jpg"
+                }
+              ]
+        );
+
         // Why
         setWhySubheader(d.whySubheader || "");
         setWhyHeading(d.whyHeading || "");
@@ -292,6 +631,15 @@ export default function TrialLandingAdminPage() {
         setCtaImageUrl(d.ctaImageUrl || "");
         setCtaImagePreview(d.ctaImageUrl || "");
 
+        // SEO & Social Meta
+        setMetaTitle(d.metaTitle || "");
+        setMetaDescription(d.metaDescription || "");
+        setMetaKeywords(d.metaKeywords || "");
+        setCanonicalUrl(d.canonicalUrl || "");
+        setIndexPage(d.indexPage !== false);
+        setOgImageUrl(d.ogImageUrl || "");
+        setOgImagePreview(d.ogImageUrl || "");
+
       } else {
         toast.error("Failed to load landing page settings.");
         setSelectedPageId(null);
@@ -300,7 +648,7 @@ export default function TrialLandingAdminPage() {
       console.error(error);
       toast.error("Error loading page settings.");
       setSelectedPageId(null);
-    } fillly: {
+    } finally {
       setLoadingPage(false);
     }
   };
@@ -431,6 +779,148 @@ export default function TrialLandingAdminPage() {
       console.error(err);
       toast.error("Error deleting page");
     }
+  };
+
+  const handleStatItemChange = (idx: number, field: keyof StatCardItem, val: string) => {
+    const next = [...statsItems];
+    next[idx] = { ...next[idx], [field]: val };
+    setStatsItems(next);
+  };
+
+  const addStatItem = () => {
+    setStatsItems([
+      ...statsItems,
+      {
+        key: `stat-${statsItems.length + 1}`,
+        value: "100+",
+        label: "New Metric",
+        desc: "Description of this metric.",
+        color: "#FB6238",
+        bgColor: "#FFF2EE",
+        borderColor: "#FFD0BD",
+        icon: "Users"
+      }
+    ]);
+  };
+
+  const removeStatItem = (idx: number) => {
+    setStatsItems(statsItems.filter((_, i) => i !== idx));
+  };
+
+  const handleConfidenceCardChange = (idx: number, field: keyof ConfidenceCardItem, val: string) => {
+    const next = [...confidenceCards];
+    next[idx] = { ...next[idx], [field]: val };
+    setConfidenceCards(next);
+  };
+
+  const addConfidenceCard = () => {
+    setConfidenceCards([
+      ...confidenceCards,
+      {
+        arabicWord: "تحدث",
+        englishLabel: "Skill",
+        description: "Description of this skill.",
+        color: "#FB6238",
+        bgColor: "#FFF2EE",
+        borderColor: "#FFD0BD",
+        icon: "MessagesSquare"
+      }
+    ]);
+  };
+
+  const removeConfidenceCard = (idx: number) => {
+    setConfidenceCards(confidenceCards.filter((_, i) => i !== idx));
+  };
+
+  const handleChecklistChange = (idx: number, val: string) => {
+    const next = [...curriculumChecklist];
+    next[idx] = val;
+    setCurriculumChecklist(next);
+  };
+
+  const addChecklistItem = () => {
+    setCurriculumChecklist([...curriculumChecklist, ""]);
+  };
+
+  const removeChecklistItem = (idx: number) => {
+    setCurriculumChecklist(curriculumChecklist.filter((_, i) => i !== idx));
+  };
+
+  const handleFlexibleFeatureChange = (idx: number, field: keyof FlexibleFeatureItem, val: string) => {
+    const next = [...flexibleFeatures];
+    next[idx] = { ...next[idx], [field]: val };
+    setFlexibleFeatures(next);
+  };
+
+  const addFlexibleFeature = () => {
+    setFlexibleFeatures([
+      ...flexibleFeatures,
+      {
+        title: "New Feature",
+        subtext: "Feature details",
+        icon: "Calendar",
+        color: "#FB6238",
+        bgColor: "#FFF2EE"
+      }
+    ]);
+  };
+
+  const removeFlexibleFeature = (idx: number) => {
+    setFlexibleFeatures(flexibleFeatures.filter((_, i) => i !== idx));
+  };
+
+  const handleFlexibleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setFlexibleImageFile(e.target.files[0]);
+      setFlexibleImagePreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
+  const handleMoreAboutFeatureChange = (idx: number, field: keyof MoreAboutFeatureItem, val: string) => {
+    const next = [...moreAboutFeatures];
+    next[idx] = { ...next[idx], [field]: val };
+    setMoreAboutFeatures(next);
+  };
+
+  const addMoreAboutFeature = () => {
+    setMoreAboutFeatures([
+      ...moreAboutFeatures,
+      {
+        title: "New Feature Title",
+        description: "Short feature description.",
+        detailedText: "Detailed explanation when expanded.",
+        icon: "GraduationCap",
+        color: "#0062FC",
+        bgColor: "#EBF4FF"
+      }
+    ]);
+  };
+
+  const removeMoreAboutFeature = (idx: number) => {
+    setMoreAboutFeatures(moreAboutFeatures.filter((_, i) => i !== idx));
+  };
+
+  const handleTestimonialChange = (idx: number, field: keyof TestimonialReviewItem, val: any) => {
+    const next = [...testimonialsList];
+    next[idx] = { ...next[idx], [field]: val };
+    setTestimonialsList(next);
+  };
+
+  const addTestimonial = () => {
+    setTestimonialsList([
+      ...testimonialsList,
+      {
+        name: "Parent Name",
+        role: "Parent, Dubai",
+        quote: "Our child loved learning Arabic with Arabic Juniors!",
+        rating: 5,
+        avatarUrl: "/parent_fatima.jpg"
+      }
+    ]);
+  };
+
+  const removeTestimonial = (idx: number) => {
+    setTestimonialsList(testimonialsList.filter((_, i) => i !== idx));
   };
 
   const handleHeroBulletChange = (idx: number, val: string) => {
@@ -585,6 +1075,44 @@ export default function TrialLandingAdminPage() {
       formData.append("heroCtaText", heroCtaText);
       formData.append("heroCtaSubtext", heroCtaSubtext);
 
+      // Stats fields
+      formData.append("statsShow", String(statsShow));
+      formData.append("statsItems", JSON.stringify(statsItems));
+
+      // Confidence fields
+      formData.append("confidenceShow", String(confidenceShow));
+      formData.append("confidenceBadge", confidenceBadge);
+      formData.append("confidenceHeading", confidenceHeading);
+      formData.append("confidenceDescription", confidenceDescription);
+      formData.append("confidenceCards", JSON.stringify(confidenceCards));
+
+      // Curriculum & Flexible Learning fields
+      formData.append("curriculumFlexShow", String(curriculumFlexShow));
+      formData.append("curriculumBadge", curriculumBadge);
+      formData.append("curriculumHeading", curriculumHeading);
+      formData.append("curriculumDescription", curriculumDescription);
+      formData.append(
+        "curriculumBadgesList",
+        JSON.stringify(curriculumBadgesList.filter(b => b.trim() !== "").map(name => ({ name })))
+      );
+      formData.append(
+        "curriculumChecklist",
+        JSON.stringify(curriculumChecklist.filter(c => c.trim() !== ""))
+      );
+
+      formData.append("flexibleBadge", flexibleBadge);
+      formData.append("flexibleHeading", flexibleHeading);
+      formData.append("flexibleDescription", flexibleDescription);
+      formData.append("flexibleFeatures", JSON.stringify(flexibleFeatures));
+
+      // More About & Testimonials fields
+      formData.append("moreAboutShow", String(moreAboutShow));
+      formData.append("moreAboutHeading", moreAboutHeading);
+      formData.append("moreAboutFeatures", JSON.stringify(moreAboutFeatures));
+      formData.append("testimonialsHeading", testimonialsHeading);
+      formData.append("testimonialsHeadingHighlight", testimonialsHeadingHighlight);
+      formData.append("testimonialsList", JSON.stringify(testimonialsList));
+
       // Why fields
       formData.append("whySubheader", whySubheader);
       formData.append("whyHeading", whyHeading);
@@ -633,11 +1161,20 @@ export default function TrialLandingAdminPage() {
       formData.append("ctaButtonText", ctaButtonText);
       formData.append("ctaSubtext", ctaSubtext);
 
+      // SEO & Social Meta fields
+      formData.append("metaTitle", metaTitle);
+      formData.append("metaDescription", metaDescription);
+      formData.append("metaKeywords", metaKeywords);
+      formData.append("canonicalUrl", canonicalUrl);
+      formData.append("indexPage", String(indexPage));
+
       // Images
       if (heroImageFile) formData.append("heroImage", heroImageFile);
       if (suitabilityImageFile) formData.append("suitabilityImage", suitabilityImageFile);
       if (ctaImageFile) formData.append("ctaImage", ctaImageFile);
       if (curriculaImageFile) formData.append("curriculaImage", curriculaImageFile);
+      if (flexibleImageFile) formData.append("flexibleImage", flexibleImageFile);
+      if (ogImageFile) formData.append("ogImage", ogImageFile);
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trial-landing/${selectedPageId}`, {
         method: "PUT",
@@ -653,6 +1190,9 @@ export default function TrialLandingAdminPage() {
         setHeroImageFile(null);
         setSuitabilityImageFile(null);
         setCtaImageFile(null);
+        setCurriculaImageFile(null);
+        setFlexibleImageFile(null);
+        setOgImageFile(null);
         fetchPageSettings(selectedPageId);
       } else {
         toast.error(result.message || "Failed to save settings updates.");
@@ -992,13 +1532,49 @@ export default function TrialLandingAdminPage() {
           1. Hero Section
         </button>
         <button
+          onClick={() => setActiveTab("stats")}
+          className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === "stats" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          <BarChart2 size={15} />
+          2. Stats Bar
+        </button>
+        <button
+          onClick={() => setActiveTab("confidence")}
+          className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === "confidence" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          <Sparkles size={15} />
+          3. Build Confidence
+        </button>
+        <button
+          onClick={() => setActiveTab("curriculumFlex")}
+          className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === "curriculumFlex" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          <BookOpen size={15} />
+          4. Curriculum & Flexibility
+        </button>
+        <button
+          onClick={() => setActiveTab("moreAbout")}
+          className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === "moreAbout" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          <MessageCircle size={15} />
+          5. More About & Reviews
+        </button>
+        <button
           onClick={() => setActiveTab("why")}
           className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
             activeTab === "why" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
           }`}
         >
           <FileText size={15} />
-          2. Why Take a Trial
+          6. Why Take a Trial
         </button>
         <button
           onClick={() => setActiveTab("onboarding")}
@@ -1007,7 +1583,7 @@ export default function TrialLandingAdminPage() {
           }`}
         >
           <Layers size={15} />
-          3. How It Works (4 Steps)
+          7. How It Works (4 Steps)
         </button>
         <button
           onClick={() => setActiveTab("skills")}
@@ -1016,7 +1592,7 @@ export default function TrialLandingAdminPage() {
           }`}
         >
           <BookOpen size={15} />
-          4. Assessments & Curricula
+          8. Assessments & Curricula
         </button>
         <button
           onClick={() => setActiveTab("choose")}
@@ -1025,7 +1601,7 @@ export default function TrialLandingAdminPage() {
           }`}
         >
           <LayoutGrid size={15} />
-          5. Why Parents Choose Us
+          9. Why Parents Choose Us
         </button>
         <button
           onClick={() => setActiveTab("faq")}
@@ -1034,7 +1610,7 @@ export default function TrialLandingAdminPage() {
           }`}
         >
           <HelpCircle size={15} />
-          6. Audience & FAQs
+          10. Audience & FAQs
         </button>
         <button
           onClick={() => setActiveTab("cta")}
@@ -1043,7 +1619,16 @@ export default function TrialLandingAdminPage() {
           }`}
         >
           <UserCheck size={15} />
-          7. Bottom CTA Banner
+          11. Bottom CTA Banner
+        </button>
+        <button
+          onClick={() => setActiveTab("seo")}
+          className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+            activeTab === "seo" ? "bg-orange-500 text-white shadow-sm" : "bg-white border text-neutral-700 hover:bg-neutral-50"
+          }`}
+        >
+          <Globe size={15} />
+          12. SEO & Social Meta
         </button>
       </div>
 
@@ -1260,7 +1845,917 @@ export default function TrialLandingAdminPage() {
           </div>
         )}
 
-        {/* TAB 2: VALUE PROPOSITIONS */}
+        {/* TAB 2: STATS BAR SECTION */}
+        {activeTab === "stats" && (
+          <div className="space-y-6">
+            <div className="bg-white border rounded-xl shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+                    <BarChart2 className="text-orange-500" size={20} />
+                    Social Proof / Stats Bar Section
+                  </h3>
+                  <p className="text-neutral-500 text-xs mt-1">
+                    Display key metrics (students, teachers, classes, schools) directly below the hero section.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={statsShow}
+                    onChange={(e) => setStatsShow(e.target.checked)}
+                    className="rounded text-orange-500 focus:ring-orange-500 h-4 w-4"
+                  />
+                  <span className="text-xs font-bold text-neutral-700">Show Section on Page</span>
+                </label>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-bold text-neutral-700">
+                    Stats Metrics ({statsItems.length} cards)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addStatItem}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors border border-orange-200"
+                  >
+                    <Plus size={14} /> Add Metric
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {statsItems.map((item, idx) => (
+                    <div key={idx} className="p-4 border rounded-xl bg-neutral-50/50 space-y-3 relative">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-xs font-bold text-neutral-700">Metric #{idx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeStatItem(idx)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Remove Metric"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1">Value (Count)</label>
+                          <input
+                            type="text"
+                            value={item.value}
+                            onChange={(e) => handleStatItemChange(idx, "value", e.target.value)}
+                            placeholder="e.g. 3,500+"
+                            className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1">Title / Label</label>
+                          <input
+                            type="text"
+                            value={item.label}
+                            onChange={(e) => handleStatItemChange(idx, "label", e.target.value)}
+                            placeholder="e.g. Happy Students"
+                            className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-600 mb-1">Description</label>
+                        <textarea
+                          rows={2}
+                          value={item.desc}
+                          onChange={(e) => handleStatItemChange(idx, "desc", e.target.value)}
+                          placeholder="e.g. Students from different schools learning Arabic with confidence."
+                          className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Accent Color</label>
+                          <input
+                            type="text"
+                            value={item.color || "#FB6238"}
+                            onChange={(e) => handleStatItemChange(idx, "color", e.target.value)}
+                            placeholder="#FB6238"
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Icon BG</label>
+                          <input
+                            type="text"
+                            value={item.bgColor || "#FFF2EE"}
+                            onChange={(e) => handleStatItemChange(idx, "bgColor", e.target.value)}
+                            placeholder="#FFF2EE"
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Icon</label>
+                          <select
+                            value={item.icon || "Users"}
+                            onChange={(e) => handleStatItemChange(idx, "icon", e.target.value)}
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          >
+                            <option value="Users">Users (Students)</option>
+                            <option value="GraduationCap">Graduation Cap (Teachers)</option>
+                            <option value="MonitorPlay">Monitor Play (Classes)</option>
+                            <option value="School">School / Building</option>
+                            <option value="BookOpen">Book Open</option>
+                            <option value="Target">Target</option>
+                            <option value="Gift">Gift</option>
+                            <option value="CheckCircle2">Check Circle</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: CONFIDENCE & COMMUNICATION SECTION */}
+        {activeTab === "confidence" && (
+          <div className="space-y-6">
+            <div className="bg-white border rounded-xl shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+                    <Sparkles className="text-orange-500" size={20} />
+                    Build Confidence & Communication (4 Core Skills)
+                  </h3>
+                  <p className="text-neutral-500 text-xs mt-1">
+                    Showcase your communication-first methodology and the 4 core Arabic skills (Speak, Read, Write, Listen).
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={confidenceShow}
+                    onChange={(e) => setConfidenceShow(e.target.checked)}
+                    className="rounded text-orange-500 focus:ring-orange-500 h-4 w-4"
+                  />
+                  <span className="text-xs font-bold text-neutral-700">Show Section on Page</span>
+                </label>
+              </div>
+
+              {/* Left Column Settings (Intro card) */}
+              <div className="bg-orange-50/20 border border-orange-100 rounded-xl p-5 space-y-4">
+                <h4 className="text-sm font-bold text-orange-800">Intro Card Content (Left Column)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Badge Text</label>
+                    <input
+                      type="text"
+                      value={confidenceBadge}
+                      onChange={(e) => setConfidenceBadge(e.target.value)}
+                      placeholder="Why Choose Arabic Juniors?"
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Heading (use Enter for new line)</label>
+                    <input
+                      type="text"
+                      value={confidenceHeading}
+                      onChange={(e) => setConfidenceHeading(e.target.value)}
+                      placeholder="Build Confidence.\nImprove Communication."
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Description Paragraph</label>
+                  <textarea
+                    rows={3}
+                    value={confidenceDescription}
+                    onChange={(e) => setConfidenceDescription(e.target.value)}
+                    placeholder="Our teaching approach focuses on real life communication rather than memorization..."
+                    className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Skill Cards */}
+              <div className="space-y-4 pt-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-bold text-neutral-700">
+                    Skill Cards ({confidenceCards.length} cards)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addConfidenceCard}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors border border-orange-200"
+                  >
+                    <Plus size={14} /> Add Skill Card
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {confidenceCards.map((card, idx) => (
+                    <div key={idx} className="p-4 border rounded-xl bg-neutral-50/50 space-y-3 relative">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-xs font-bold text-neutral-700">Card #{idx + 1}: {card.englishLabel}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeConfidenceCard(idx)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Remove Card"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1">Arabic Word (Top)</label>
+                          <input
+                            type="text"
+                            value={card.arabicWord}
+                            onChange={(e) => handleConfidenceCardChange(idx, "arabicWord", e.target.value)}
+                            placeholder="تحدّث"
+                            className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 mb-1">English Label (Bottom)</label>
+                          <input
+                            type="text"
+                            value={card.englishLabel}
+                            onChange={(e) => handleConfidenceCardChange(idx, "englishLabel", e.target.value)}
+                            placeholder="Speak"
+                            className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-600 mb-1">Description</label>
+                        <textarea
+                          rows={2}
+                          value={card.description}
+                          onChange={(e) => handleConfidenceCardChange(idx, "description", e.target.value)}
+                          placeholder="Improve speaking skills through real conversations"
+                          className="w-full px-3 py-1.5 border rounded-lg text-sm bg-white text-black resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Accent Color</label>
+                          <input
+                            type="text"
+                            value={card.color || "#FB6238"}
+                            onChange={(e) => handleConfidenceCardChange(idx, "color", e.target.value)}
+                            placeholder="#FB6238"
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Icon BG</label>
+                          <input
+                            type="text"
+                            value={card.bgColor || "#FFF2EE"}
+                            onChange={(e) => handleConfidenceCardChange(idx, "bgColor", e.target.value)}
+                            placeholder="#FFF2EE"
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Icon</label>
+                          <select
+                            value={card.icon || "MessagesSquare"}
+                            onChange={(e) => handleConfidenceCardChange(idx, "icon", e.target.value)}
+                            className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                          >
+                            <option value="MessagesSquare">Chat / Speech (Speak)</option>
+                            <option value="BookOpen">Book Open (Read)</option>
+                            <option value="Pencil">Pencil (Write)</option>
+                            <option value="Headphones">Headphones (Listen)</option>
+                            <option value="Users">Users</option>
+                            <option value="GraduationCap">Graduation Cap</option>
+                            <option value="School">School</option>
+                            <option value="Target">Target</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: CURRICULUM & FLEXIBILITY SECTION */}
+        {activeTab === "curriculumFlex" && (
+          <div className="space-y-6">
+            <div className="bg-white border rounded-xl shadow-sm p-6 space-y-6">
+              
+              {/* Header & Toggle */}
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+                    <BookOpen className="text-orange-500" size={20} />
+                    Curriculum Alignment & Flexible Learning Section
+                  </h3>
+                  <p className="text-neutral-500 text-xs mt-1">
+                    Manage UAE & International Curriculums, Feature Checklist, Flexible Learning Benefits, and Student Graphic.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={curriculumFlexShow}
+                    onChange={(e) => setCurriculumFlexShow(e.target.checked)}
+                    className="rounded text-orange-500 focus:ring-orange-500 h-4 w-4"
+                  />
+                  <span className="text-xs font-bold text-neutral-700">Show Section on Page</span>
+                </label>
+              </div>
+
+              {/* Two Column Grid for Curriculum vs Flexible Settings */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Column 1: Curriculum Settings */}
+                <div className="bg-orange-50/20 border border-orange-100 rounded-xl p-5 space-y-4">
+                  <h4 className="text-sm font-bold text-orange-800 flex items-center gap-1.5">
+                    <Sparkles size={16} /> UAE Curriculum Box (Left Part)
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Badge Pill</label>
+                      <input
+                        type="text"
+                        value={curriculumBadge}
+                        onChange={(e) => setCurriculumBadge(e.target.value)}
+                        placeholder="UAE School Curriculum Expert"
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Heading</label>
+                      <input
+                        type="text"
+                        value={curriculumHeading}
+                        onChange={(e) => setCurriculumHeading(e.target.value)}
+                        placeholder="Aligned with UAE School Curriculum"
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Description Paragraph</label>
+                    <textarea
+                      rows={3}
+                      value={curriculumDescription}
+                      onChange={(e) => setCurriculumDescription(e.target.value)}
+                      placeholder="We specialize in Arabic for UAE schools..."
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Curriculum Badges / Emblems (Comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={curriculumBadgesList.join(", ")}
+                      onChange={(e) =>
+                        setCurriculumBadgesList(
+                          e.target.value
+                            .split(",")
+                            .map((b) => b.trim())
+                            .filter(Boolean)
+                        )
+                      }
+                      placeholder="UAE MOE, CBSE, British, IB, American"
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                    />
+                    <span className="text-[11px] text-neutral-400 mt-1 block">
+                      Supports: UAE MOE, CBSE, British, IB, American (automatically renders matching circular emblems)
+                    </span>
+                  </div>
+
+                  {/* Checklist Items */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold text-neutral-700">
+                        Checklist Bullet Points ({curriculumChecklist.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addChecklistItem}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 hover:bg-orange-100 text-xs font-bold rounded-lg border border-orange-200"
+                      >
+                        <Plus size={13} /> Add Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {curriculumChecklist.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-orange-500">✓</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleChecklistChange(idx, e.target.value)}
+                            placeholder="e.g. Grade KG to 12"
+                            className="w-full px-3 py-1.5 border rounded-lg text-xs bg-white text-black"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeChecklistItem(idx)}
+                            className="text-red-400 hover:text-red-600 p-1"
+                          >
+                            <Trash size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Column 2: Flexible Learning Settings */}
+                <div className="bg-neutral-50/60 border rounded-xl p-5 space-y-4">
+                  <h4 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                    <Layers size={16} className="text-purple-600" /> Flexible Learning Benefits (Middle Part)
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Badge Pill</label>
+                      <input
+                        type="text"
+                        value={flexibleBadge}
+                        onChange={(e) => setFlexibleBadge(e.target.value)}
+                        placeholder="Flexible Learning"
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Heading</label>
+                      <input
+                        type="text"
+                        value={flexibleHeading}
+                        onChange={(e) => setFlexibleHeading(e.target.value)}
+                        placeholder="Learn Anytime, Anywhere"
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Description Paragraph</label>
+                    <textarea
+                      rows={3}
+                      value={flexibleDescription}
+                      onChange={(e) => setFlexibleDescription(e.target.value)}
+                      placeholder="Our online Arabic classes are designed to fit your schedule..."
+                      className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black resize-none"
+                    />
+                  </div>
+
+                  {/* Feature Rows */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold text-neutral-700">
+                        Feature Benefit Cards ({flexibleFeatures.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={addFlexibleFeature}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs font-bold rounded-lg border border-purple-200"
+                      >
+                        <Plus size={13} /> Add Feature
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {flexibleFeatures.map((feat, idx) => (
+                        <div key={idx} className="p-3.5 border rounded-lg bg-white space-y-2.5 relative">
+                          <div className="flex items-center justify-between border-b pb-1.5">
+                            <span className="text-xs font-bold text-neutral-700">Feature #{idx + 1}: {feat.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeFlexibleFeature(idx)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                            >
+                              <Trash size={13} />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Title</label>
+                              <input
+                                type="text"
+                                value={feat.title}
+                                onChange={(e) => handleFlexibleFeatureChange(idx, "title", e.target.value)}
+                                placeholder="Flexible Class Scheduling"
+                                className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Subtext</label>
+                              <input
+                                type="text"
+                                value={feat.subtext}
+                                onChange={(e) => handleFlexibleFeatureChange(idx, "subtext", e.target.value)}
+                                placeholder="Choose timings that fit your routine"
+                                className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Icon</label>
+                              <select
+                                value={feat.icon || "Calendar"}
+                                onChange={(e) => handleFlexibleFeatureChange(idx, "icon", e.target.value)}
+                                className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                              >
+                                <option value="Calendar">Calendar</option>
+                                <option value="Users">Users</option>
+                                <option value="Video">Video / Live</option>
+                                <option value="BarChart3">Bar Chart / Progress</option>
+                                <option value="GraduationCap">Graduation Cap</option>
+                                <option value="School">School</option>
+                                <option value="MessagesSquare">Chat</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Color</label>
+                              <input
+                                type="text"
+                                value={feat.color || "#FB6238"}
+                                onChange={(e) => handleFlexibleFeatureChange(idx, "color", e.target.value)}
+                                className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Background</label>
+                              <input
+                                type="text"
+                                value={feat.bgColor || "#FFF2EE"}
+                                onChange={(e) => handleFlexibleFeatureChange(idx, "bgColor", e.target.value)}
+                                className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Graphic / Image Upload Card */}
+              <div className="bg-slate-50/50 border rounded-xl p-5 space-y-4">
+                <h4 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                  <ImageIcon size={16} className="text-blue-600" /> Student Graphic / Artwork (Right Part)
+                </h4>
+                <p className="text-xs text-neutral-500">
+                  Upload a custom artwork or photograph for the right student card. By default, the high-res 3D student girl illustration is used.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="border border-dashed rounded-lg p-5 flex flex-col items-center justify-center relative w-full sm:w-64 bg-white">
+                    <input
+                      type="file"
+                      id="flexible-image-file"
+                      onChange={handleFlexibleImageChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <label htmlFor="flexible-image-file" className="cursor-pointer text-center group">
+                      <Upload className="h-8 w-8 text-neutral-400 group-hover:text-orange-500 mx-auto mb-1" />
+                      <span className="text-xs font-semibold text-orange-500 group-hover:underline">Choose New Image</span>
+                    </label>
+                  </div>
+
+                  {flexibleImagePreview && (
+                    <div className="w-36 h-36 bg-white rounded-xl border p-2 relative flex items-center justify-center shadow-sm">
+                      <img
+                        src={flexibleImagePreview}
+                        alt="Curriculum Preview"
+                        className="max-w-full max-h-full object-contain rounded-lg"
+                      />
+                      {flexibleImageFile && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFlexibleImageFile(null);
+                            setFlexibleImagePreview(flexibleImageUrl || "/online_learning_girl.jpg");
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 text-[10px] hover:bg-red-600 font-bold px-1.5 shadow"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: MORE ABOUT ARABIC JUNIORS & REVIEWS */}
+        {activeTab === "moreAbout" && (
+          <div className="space-y-6">
+            <div className="bg-white border rounded-xl shadow-sm p-6 space-y-6">
+              
+              {/* Header & Toggle */}
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
+                    <MessageCircle className="text-orange-500" size={20} />
+                    More About Arabic Juniors & Parent Reviews
+                  </h3>
+                  <p className="text-neutral-500 text-xs mt-1">
+                    Manage the 6 feature highlights (with expandable details) and parent testimonial review cards with star ratings.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    checked={moreAboutShow}
+                    onChange={(e) => setMoreAboutShow(e.target.checked)}
+                    className="rounded text-orange-500 focus:ring-orange-500 h-4 w-4"
+                  />
+                  <span className="text-xs font-bold text-neutral-700">Show Section on Page</span>
+                </label>
+              </div>
+
+              {/* Section Centered Heading */}
+              <div className="bg-orange-50/20 border border-orange-100 rounded-xl p-4">
+                <label className="block text-xs font-bold text-neutral-700 mb-1">
+                  Main Section Heading (Centered Top)
+                </label>
+                <input
+                  type="text"
+                  value={moreAboutHeading}
+                  onChange={(e) => setMoreAboutHeading(e.target.value)}
+                  placeholder="More About Arabic Juniors"
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white text-black font-semibold"
+                />
+              </div>
+
+              {/* Two Column Grid: Features List (Left) & Testimonials (Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Column 1: Feature Highlights (Left Card) */}
+                <div className="bg-neutral-50/60 border rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                      <Sparkles size={16} className="text-orange-500" />
+                      Feature Highlights ({moreAboutFeatures.length})
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addMoreAboutFeature}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-600 hover:bg-orange-100 text-xs font-bold rounded-lg border border-orange-200"
+                    >
+                      <Plus size={13} /> Add Feature
+                    </button>
+                  </div>
+
+                  <div className="space-y-3.5 max-h-[700px] overflow-y-auto pr-1">
+                    {moreAboutFeatures.map((feat, idx) => (
+                      <div key={idx} className="p-3.5 border rounded-lg bg-white space-y-2.5 relative shadow-sm">
+                        <div className="flex items-center justify-between border-b pb-1.5">
+                          <span className="text-xs font-bold text-neutral-700">Feature #{idx + 1}: {feat.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeMoreAboutFeature(idx)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash size={13} />
+                          </button>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Title</label>
+                          <input
+                            type="text"
+                            value={feat.title}
+                            onChange={(e) => handleMoreAboutFeatureChange(idx, "title", e.target.value)}
+                            placeholder="Native & Experienced Arabic Teachers"
+                            className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black font-semibold"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Short Summary</label>
+                          <textarea
+                            rows={2}
+                            value={feat.description}
+                            onChange={(e) => handleMoreAboutFeatureChange(idx, "description", e.target.value)}
+                            placeholder="Learn from native and certified Arabic teachers..."
+                            className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black resize-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Expanded Detail (When (+) clicked)</label>
+                          <textarea
+                            rows={2}
+                            value={feat.detailedText || ""}
+                            onChange={(e) => handleMoreAboutFeatureChange(idx, "detailedText", e.target.value)}
+                            placeholder="Additional details shown when student clicks plus button..."
+                            className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black resize-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Icon</label>
+                            <select
+                              value={feat.icon || "GraduationCap"}
+                              onChange={(e) => handleMoreAboutFeatureChange(idx, "icon", e.target.value)}
+                              className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                            >
+                              <option value="GraduationCap">Graduation Cap</option>
+                              <option value="Users">Users (1-to-1)</option>
+                              <option value="Monitor">Monitor (Kids)</option>
+                              <option value="School">School / Courses</option>
+                              <option value="MonitorPlay">Monitor Play / Online</option>
+                              <option value="HeartHandshake">Heart Handshake / Support</option>
+                              <option value="BookOpen">Book Open</option>
+                              <option value="Calendar">Calendar</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Color</label>
+                            <input
+                              type="text"
+                              value={feat.color || "#0062FC"}
+                              onChange={(e) => handleMoreAboutFeatureChange(idx, "color", e.target.value)}
+                              placeholder="#0062FC"
+                              className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Background</label>
+                            <input
+                              type="text"
+                              value={feat.bgColor || "#EBF4FF"}
+                              onChange={(e) => handleMoreAboutFeatureChange(idx, "bgColor", e.target.value)}
+                              placeholder="#EBF4FF"
+                              className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+
+                {/* Column 2: Parent Reviews (Right Card) */}
+                <div className="bg-neutral-50/60 border rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
+                      <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                      Parent Testimonials ({testimonialsList.length})
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addTestimonial}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 text-xs font-bold rounded-lg border border-yellow-200"
+                    >
+                      <Plus size={13} /> Add Review
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Heading Prefix</label>
+                      <input
+                        type="text"
+                        value={testimonialsHeading}
+                        onChange={(e) => setTestimonialsHeading(e.target.value)}
+                        placeholder="What Parents Say About"
+                        className="w-full px-3 py-1.5 border rounded-lg text-xs bg-white text-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Highlight Word (Orange)</label>
+                      <input
+                        type="text"
+                        value={testimonialsHeadingHighlight}
+                        onChange={(e) => setTestimonialsHeadingHighlight(e.target.value)}
+                        placeholder="Arabic Juniors"
+                        className="w-full px-3 py-1.5 border rounded-lg text-xs bg-white text-black"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3.5 max-h-[700px] overflow-y-auto pr-1">
+                    {testimonialsList.map((item, idx) => (
+                      <div key={idx} className="p-3.5 border rounded-lg bg-white space-y-2.5 relative shadow-sm">
+                        <div className="flex items-center justify-between border-b pb-1.5">
+                          <span className="text-xs font-bold text-neutral-700">Review #{idx + 1}: {item.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeTestimonial(idx)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash size={13} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Parent Name</label>
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={(e) => handleTestimonialChange(idx, "name", e.target.value)}
+                              placeholder="Fatima Al Mansoori"
+                              className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Role / City</label>
+                            <input
+                              type="text"
+                              value={item.role}
+                              onChange={(e) => handleTestimonialChange(idx, "role", e.target.value)}
+                              placeholder="Parent, Dubai"
+                              className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Review Quote</label>
+                          <textarea
+                            rows={2}
+                            value={item.quote}
+                            onChange={(e) => handleTestimonialChange(idx, "quote", e.target.value)}
+                            placeholder="Arabic Juniors has been a wonderful experience..."
+                            className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black resize-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 items-center">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Star Rating</label>
+                            <select
+                              value={item.rating || 5}
+                              onChange={(e) => handleTestimonialChange(idx, "rating", Number(e.target.value))}
+                              className="w-full px-2 py-1 border rounded text-xs bg-white text-black"
+                            >
+                              <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                              <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
+                              <option value={3}>⭐⭐⭐ (3 Stars)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-neutral-600 mb-0.5">Avatar Image URL</label>
+                            <input
+                              type="text"
+                              value={item.avatarUrl || ""}
+                              onChange={(e) => handleTestimonialChange(idx, "avatarUrl", e.target.value)}
+                              placeholder="/parent_fatima.jpg"
+                              className="w-full px-2.5 py-1 border rounded text-xs bg-white text-black"
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: VALUE PROPOSITIONS */}
         {activeTab === "why" && (
           <div className="space-y-6">
             <div className="bg-white border rounded-xl shadow-sm p-6 space-y-4">
@@ -2059,6 +3554,294 @@ export default function TrialLandingAdminPage() {
                   <span className="text-xs text-neutral-400 leading-normal">
                     This image is aligned to the left of the banner, surrounded by floating purple letters. Transparent background PNG illustration is recommended. Defaults to the female hijab teacher avatar.
                   </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 12: SEO & SOCIAL META */}
+        {activeTab === "seo" && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header info */}
+            <div className="bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-100 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 bg-orange-500 text-white rounded-lg shadow-sm">
+                  <Globe className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-neutral-800">
+                    Search Engine Optimization (SEO) & Social Sharing
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    Configure Google search preview, indexing permissions, meta tags, and Open Graph previews for WhatsApp, Facebook, LinkedIn and Twitter.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Google SERP Live Preview Box */}
+            <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-red-400" />
+                  <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                  <div className="h-3 w-3 rounded-full bg-green-400" />
+                  <span className="text-xs font-semibold text-neutral-500 ml-2">Google Search Live SERP Preview</span>
+                </div>
+                <span className="text-[11px] bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-medium border border-blue-100">
+                  Desktop & Mobile Preview
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50/80 rounded-lg border border-slate-200/80 space-y-1.5 font-sans">
+                {/* Domain & Breadcrumb */}
+                <div className="flex items-center gap-2 text-xs text-neutral-600">
+                  <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-[10px] text-white font-bold">
+                    AJ
+                  </div>
+                  <span className="font-medium text-neutral-700">Arabic Juniors</span>
+                  <span className="text-neutral-400">›</span>
+                  <span className="text-neutral-500 truncate max-w-xs">
+                    https://arabicjuniors.com/{slug || "trial-landing"}
+                  </span>
+                </div>
+
+                {/* Search Title */}
+                <h4 className="text-lg font-medium text-[#1a0dab] hover:underline cursor-pointer leading-snug">
+                  {metaTitle || pageTitle || "Book Free Arabic Trial Class | Arabic Juniors"}
+                </h4>
+
+                {/* Search Description */}
+                <p className="text-sm text-[#4d5156] leading-relaxed line-clamp-2">
+                  {metaDescription ||
+                    "Book a 100% Free Live 1-on-1 Arabic Trial Class for Kids & Teens. Master speaking, reading, writing & school curriculum with native certified teachers."}
+                </p>
+
+                {/* Rich Snippet Preview */}
+                <div className="flex items-center gap-3 pt-1 text-xs text-neutral-500">
+                  <span className="text-amber-500 font-semibold flex items-center gap-1">
+                    ★★★★★ <span className="text-neutral-700 font-normal">Rating: 4.9 · 1,500+ reviews</span>
+                  </span>
+                  <span>·</span>
+                  <span className="text-emerald-700 font-medium">Free (AED 0)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Core SEO Meta Form */}
+            <div className="bg-white border rounded-xl p-6 shadow-sm space-y-6">
+              <h4 className="text-base font-bold text-neutral-800 flex items-center gap-2">
+                <FileText size={18} className="text-orange-500" />
+                Meta Tags & Robots Indexing
+              </h4>
+
+              <div className="space-y-4">
+                {/* Meta Title */}
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-sm font-semibold text-neutral-700">
+                      SEO Meta Title
+                    </label>
+                    <span className={`text-xs font-mono ${metaTitle.length > 60 ? "text-amber-600 font-bold" : "text-neutral-400"}`}>
+                      {metaTitle.length}/60 characters {metaTitle.length > 60 && "(Recommended max 60)"}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                    placeholder="e.g. Book Free Arabic Trial Class | Arabic Juniors"
+                    className="w-full px-3.5 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-neutral-900 bg-white"
+                  />
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Appears in browser tabs and as the primary title in search engine results. Leave blank to fallback to default page title.
+                  </p>
+                </div>
+
+                {/* Meta Description */}
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-sm font-semibold text-neutral-700">
+                      SEO Meta Description
+                    </label>
+                    <span className={`text-xs font-mono ${metaDescription.length > 160 ? "text-amber-600 font-bold" : "text-neutral-400"}`}>
+                      {metaDescription.length}/160 characters {metaDescription.length > 160 && "(Recommended max 160)"}
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={metaDescription}
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    placeholder="e.g. Book a 100% Free Live 1-on-1 Arabic Trial Class for Kids & Teens. Master speaking, reading, writing & school curriculum with native certified teachers."
+                    className="w-full px-3.5 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-neutral-900 bg-white leading-relaxed"
+                  />
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Brief summary displayed under the link in search results. Compelling descriptions improve click-through rates.
+                  </p>
+                </div>
+
+                {/* Keywords & Canonical */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1.5">
+                      Meta Keywords (Comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={metaKeywords}
+                      onChange={(e) => setMetaKeywords(e.target.value)}
+                      placeholder="arabic for kids, online tutor dubai, learn arabic uae"
+                      className="w-full px-3.5 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-neutral-900 bg-white"
+                    />
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Key search terms relevant to this specific landing page.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1.5">
+                      Canonical URL (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={canonicalUrl}
+                      onChange={(e) => setCanonicalUrl(e.target.value)}
+                      placeholder={`https://arabicjuniors.com/${slug || "trial-landing"}`}
+                      className="w-full px-3.5 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-neutral-900 bg-white"
+                    />
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Leave blank to auto-use current page URL as canonical reference.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Robots Indexing Toggle */}
+                <div className="pt-3 border-t">
+                  <label className="flex items-center gap-3 cursor-pointer p-3.5 rounded-lg border bg-neutral-50/60 hover:bg-neutral-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={indexPage}
+                      onChange={(e) => setIndexPage(e.target.checked)}
+                      className="h-5 w-5 text-orange-500 rounded border-neutral-300 focus:ring-orange-400"
+                    />
+                    <div>
+                      <span className="text-sm font-semibold text-neutral-800 block">
+                        Allow Search Engines to Index this Page (index, follow)
+                      </span>
+                      <span className="text-xs text-neutral-500">
+                        {indexPage 
+                          ? "✓ Active: Google, Bing and other search engines are permitted to index and rank this page." 
+                          : "✕ Noindex: Search engines are instructed NOT to index this page (robots: noindex, nofollow)."}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Share & Open Graph Card */}
+            <div className="bg-white border rounded-xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b pb-3">
+                <h4 className="text-base font-bold text-neutral-800 flex items-center gap-2">
+                  <Share2 size={18} className="text-orange-500" />
+                  Social Media & WhatsApp Card (Open Graph)
+                </h4>
+                <span className="text-xs text-neutral-400">Preview 1200 x 630</span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Upload Controls */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1.5">
+                      Social Share Image (OG Image)
+                    </label>
+                    <div className="border-2 border-dashed border-neutral-200 hover:border-orange-400 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors">
+                      <input
+                        type="file"
+                        id="og-image-upload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setOgImageFile(e.target.files[0]);
+                            setOgImagePreview(URL.createObjectURL(e.target.files[0]));
+                          }
+                        }}
+                      />
+                      <label htmlFor="og-image-upload" className="cursor-pointer group flex flex-col items-center">
+                        <div className="p-3 bg-orange-50 text-orange-500 rounded-full group-hover:scale-105 transition-transform mb-2">
+                          <Upload className="h-6 w-6" />
+                        </div>
+                        <span className="text-xs font-bold text-neutral-800 group-hover:text-orange-600">
+                          Upload Custom Social Banner
+                        </span>
+                        <span className="text-[11px] text-neutral-400 mt-1">
+                          Recommended: 1200 × 630 px (PNG, JPG, WebP)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {ogImagePreview && (
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border">
+                      <span className="text-xs text-neutral-600 font-medium truncate max-w-xs">
+                        {ogImageFile ? `File: ${ogImageFile.name}` : "Current Active Image"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOgImageFile(null);
+                          setOgImagePreview(ogImageUrl || "");
+                        }}
+                        className="text-xs font-bold text-red-600 hover:text-red-700 px-2 py-1 rounded bg-red-50 border border-red-200"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-lg text-xs text-blue-900 leading-relaxed">
+                    <p className="font-semibold mb-1">💡 What is Open Graph?</p>
+                    When parents or staff share this page link on <strong>WhatsApp, Facebook, Twitter, iMessage, or LinkedIn</strong>, this custom image and text appears automatically as the link preview card.
+                  </div>
+                </div>
+
+                {/* Social Card Live Preview */}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                    WhatsApp & Social Card Preview
+                  </label>
+                  <div className="border border-neutral-200 rounded-xl overflow-hidden shadow-sm bg-neutral-50">
+                    <div className="aspect-[1.91/1] w-full bg-slate-100 overflow-hidden relative flex items-center justify-center">
+                      {ogImagePreview ? (
+                        <img
+                          src={ogImagePreview}
+                          alt="Open Graph Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-orange-400 to-pink-500 flex flex-col items-center justify-center text-white p-6 text-center">
+                          <span className="text-2xl font-black tracking-tight mb-1">Arabic Juniors</span>
+                          <span className="text-sm font-semibold opacity-95">Free 1-on-1 Trial Class</span>
+                          <span className="text-xs opacity-75 mt-2">Default Social Banner</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 bg-white border-t space-y-1">
+                      <p className="text-[10px] font-semibold tracking-wider text-neutral-400 uppercase">
+                        ARABICJUNIORS.COM
+                      </p>
+                      <h5 className="text-sm font-bold text-neutral-900 line-clamp-1">
+                        {metaTitle || pageTitle || "Book Free Arabic Trial Class | Arabic Juniors"}
+                      </h5>
+                      <p className="text-xs text-neutral-500 line-clamp-2">
+                        {metaDescription ||
+                          "Book a 100% Free Live 1-on-1 Arabic Trial Class for Kids & Teens. Master speaking, reading, writing & school curriculum."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
