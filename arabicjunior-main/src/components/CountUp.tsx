@@ -17,10 +17,12 @@ export default function CountUp({
   value,
   duration = 1600,
   className,
+  style,
 }: {
   value: string;
   duration?: number;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [display, setDisplay] = useState(value);
@@ -87,7 +89,7 @@ export default function CountUp({
   }, [value, duration]);
 
   return (
-    <span ref={ref} suppressHydrationWarning className={className}>
+    <span ref={ref} suppressHydrationWarning className={className} style={style}>
       {display}
     </span>
   );
