@@ -22,6 +22,18 @@ import {
   UserCheck,
   Users,
   Video,
+  BarChart3,
+  Calendar,
+  ClipboardCheck,
+  Headphones,
+  HeartHandshake,
+  Lightbulb,
+  MapPin,
+  Monitor,
+  MonitorPlay,
+  PenSquare,
+  Smile,
+  User,
 } from "lucide-react";
 
 /**
@@ -54,9 +66,26 @@ export const ICON_MAP: Record<string, React.ElementType> = {
   ShieldCheck,
   Video,
   LineChart,
+  // Used by the city landing pages and the teacher profile pages.
+  Calendar,
+  Headphones,
+  User,
+  Monitor,
+  MonitorPlay,
+  PenSquare,
+  BarChart3,
+  ClipboardCheck,
+  Lightbulb,
+  MapPin,
+  Smile,
+  HeartHandshake,
 };
 
 export const ICON_NAMES = Object.keys(ICON_MAP);
+
+/** Resolves a stored icon name, falling back rather than crashing on a typo. */
+export const iconFor = (name: string | undefined, fallback = "Sparkles") =>
+  ICON_MAP[name ?? ""] ?? ICON_MAP[fallback] ?? Sparkles;
 
 /**
  * Colour names rather than raw classes.

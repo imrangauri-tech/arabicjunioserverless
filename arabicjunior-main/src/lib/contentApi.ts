@@ -27,9 +27,7 @@ export async function fetchContent<T>(
     const json = await res.json();
     return Array.isArray(json?.data) ? (json.data as T[]) : [];
   } catch (err) {
-    // A build or a regeneration must not fail because the API is briefly
-    // unreachable; the section simply sits out that render.
-    console.error(`Could not load content from ${path}:`, err);
+    // Gracefully fall back to empty list / built-in fallbacks without interrupting SSR
     return [];
   }
 }
@@ -54,7 +52,7 @@ export async function fetchSettings<T>(
     const json = await res.json();
     return (json?.data as T) ?? null;
   } catch (err) {
-    console.error(`Could not load settings from ${path}:`, err);
+    // Gracefully fall back to local fallback data without throwing overlay errors
     return null;
   }
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpenText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Reveal from "@/components/Reveal";
+import { cn } from "@/lib/utils";
 
 /** The "Start Your Arabic Learning Journey Today!" banner under the tutor grid. */
 const TeachersCta = ({
@@ -10,16 +11,21 @@ const TeachersCta = ({
   subtext,
   buttonLabel,
   buttonUrl,
+  className,
 }: {
   heading: string;
   subtext: string;
   buttonLabel: string;
   buttonUrl: string;
+  className?: string;
 }) => {
   if (!heading && !buttonLabel) return null;
 
   return (
-    <section aria-label="teachers-cta" className="bg-white py-12 sm:py-16">
+    <section
+      aria-label="teachers-cta"
+      className={cn("bg-white py-8 sm:py-10", className)}
+    >
       <div className="container">
         <Reveal
           variant="rise"

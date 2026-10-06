@@ -8,6 +8,78 @@ type MulterFiles = { [fieldname: string]: Express.Multer.File[] } | undefined;
 
 const IMAGE_MIME = /^image\//;
 
+const toSlug = (value: string) =>
+  value
+    .toString()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+/**
+ * A slug no other teacher uses: "aisha", then "aisha-2", "aisha-3"…
+ * Two teachers can share a first name; their profile URLs cannot.
+ */
+const uniqueSlug = async (base: string, excludeId?: unknown) => {
+  const root = toSlug(base) || "teacher";
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? root : `${root}-${n}`;
+    const clash = await Teacher.exists({
+      slug: candidate,
+      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+    });
+    if (!clash) return candidate;
+  }
+};
+
+/** Arrives as a JSON string from a multipart form. */
+const parseArray = (value: unknown): unknown[] | undefined => {
+  if (value === undefined) return undefined;
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+/** A highlight with no title would render as an empty row, so it is dropped. */
+const cleanHighlights = (list: unknown[]) =>
+  list
+    .map((item: any) => ({
+      icon: text(item?.icon) || "Smile",
+      title: text(item?.title),
+      description: text(item?.description),
+    }))
+    .filter((item) => item.title);
+
+const cleanPhilosophies = (list: unknown[]) =>
+  list
+    .map((item: any) => ({
+      icon: text(item?.icon) || "Lightbulb",
+      title: text(item?.title),
+      paragraphs: (Array.isArray(item?.paragraphs) ? item.paragraphs : [])
+        .map(text)
+        .filter(Boolean),
+    }))
+    .filter((item) => item.title);
+
+const PROFILE_TEXT_FIELDS = [
+  "country",
+  "languages",
+  "bio",
+  "quote",
+  "photoBadge",
+  "photoTitle",
+  "photoTitleHighlight",
+  "aboutIntro",
+] as const;
+
 /**
  * Shared field handling for create and update. Returns either the fields to
  * write or a message to send back with a 400.
@@ -36,6 +108,32 @@ const buildFields = async (
   fields.subject = asString("subject") ?? existing?.subject ?? "Arabic";
   fields.shortDescription =
     asString("shortDescription") ?? existing?.shortDescription ?? "";
+
+  // An admin-typed slug must be free; a generated one is made free.
+  const requestedSlug = asString("slug");
+  if (requestedSlug) {
+    const slug = toSlug(requestedSlug);
+    if (!slug) return { error: "Profile URL must contain letters or numbers" };
+    const clash = await Teacher.exists({
+      slug,
+      ...(existing ? { _id: { $ne: existing._id } } : {}),
+    });
+    if (clash) return { error: `The profile URL "${slug}" is already used by another teacher` };
+    fields.slug = slug;
+  } else {
+    fields.slug = existing?.slug || (await uniqueSlug(name, existing?._id));
+  }
+
+  for (const key of PROFILE_TEXT_FIELDS) {
+    const value = asString(key);
+    if (value !== undefined) fields[key] = value;
+  }
+
+  const photoHighlights = parseArray(body.photoHighlights);
+  if (photoHighlights) fields.photoHighlights = cleanHighlights(photoHighlights);
+
+  const philosophies = parseArray(body.philosophies);
+  if (philosophies) fields.philosophies = cleanPhilosophies(philosophies);
 
   const rating = Number(asString("rating") ?? existing?.rating ?? 5);
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
@@ -105,10 +203,38 @@ export const getPublishedTeachers = async (req: Request, res: Response) => {
       .sort({ order: 1, createdAt: -1 })
       .select("-__v");
 
+    // Teachers saved before profile pages existed have no slug yet, and their
+    // card would have nothing to link to. Done once each, on first read.
+    for (const teacher of teachers) {
+      if (teacher.slug) continue;
+      teacher.slug = await uniqueSlug(teacher.name, teacher._id);
+      await teacher.save();
+    }
+
     res.status(200).json({ success: true, message: "success", data: teachers });
   } catch (error: any) {
     console.error("Error listing published teachers:", error);
     res.status(500).json({ success: false, message: "Could not load teachers" });
+  }
+};
+
+/** One published teacher, for the profile page at /our-teachers/<slug>. */
+export const getPublishedTeacherBySlug = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const slug = toSlug(String(req.params.slug || ""));
+    if (!slug) {
+      return res.status(404).json({ success: false, message: "Teacher not found" });
+    }
+
+    const teacher = await Teacher.findOne({ slug, status: "published" }).select("-__v");
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher not found" });
+    }
+
+    res.status(200).json({ success: true, message: "success", data: teacher });
+  } catch (error: any) {
+    console.error("Error loading teacher profile:", error);
+    res.status(500).json({ success: false, message: "Could not load the teacher" });
   }
 };
 

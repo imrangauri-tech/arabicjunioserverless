@@ -20,9 +20,71 @@ import {
   ICON_THEME_NAMES,
 } from "@/lib/sectionIcons";
 import type {
+  TeacherProfilePageContent,
   TeachersPageCard,
   TeachersPageHighlight,
 } from "@/types/TeachersPage";
+import FieldsEditor, { type FieldDef } from "@/components/admin/FieldsEditor";
+
+/** Copy shared by every teacher profile page (/our-teachers/<slug>). */
+const PROFILE_PAGE_FIELDS: FieldDef[] = [
+  {
+    kind: "row",
+    fields: [
+      { kind: "text", key: "badge", label: "Badge above the name", placeholder: "OUR TEACHERS" },
+      { kind: "text", key: "salutation", label: "Word before the name", placeholder: "Meet" },
+    ],
+  },
+  { kind: "text", key: "aboutLabel", label: "About section label", placeholder: "ABOUT ME" },
+  { kind: "heading", label: "Verified teachers block" },
+  { kind: "toggle", key: "verifiedShow", label: "Show the verified teachers block" },
+  { kind: "text", key: "verifiedBadge", label: "Badge" },
+  {
+    kind: "row",
+    fields: [
+      { kind: "text", key: "verifiedTitle", label: "Heading" },
+      { kind: "text", key: "verifiedTitleHighlight", label: "Heading (orange part)" },
+    ],
+  },
+  { kind: "textarea", key: "verifiedSubtitle", label: "Sub text", rows: 2 },
+  {
+    kind: "list",
+    key: "verifiedCards",
+    label: "Cards",
+    itemLabel: "card",
+    newItem: () => ({ icon: "Award", title: "", description: "" }),
+    fields: [
+      { kind: "icon", key: "icon" },
+      { kind: "text", key: "title", label: "Title" },
+      { kind: "textarea", key: "description", label: "Description", rows: 2 },
+    ],
+  },
+  { kind: "heading", label: "Trial banner" },
+  { kind: "toggle", key: "ctaShow", label: "Show the trial banner" },
+  { kind: "text", key: "ctaHeading", label: "Heading" },
+  { kind: "textarea", key: "ctaSubtext", label: "Sub text", rows: 2 },
+  {
+    kind: "row",
+    fields: [
+      { kind: "text", key: "ctaButtonLabel", label: "Button text" },
+      { kind: "text", key: "ctaButtonUrl", label: "Button link", placeholder: "/register" },
+    ],
+  },
+  { kind: "heading", label: "FAQ" },
+  { kind: "toggle", key: "faqShow", label: "Show the FAQ" },
+  {
+    kind: "list",
+    key: "faqs",
+    label: "Questions",
+    itemLabel: "question",
+    titleKey: "question",
+    newItem: () => ({ question: "", answer: "" }),
+    fields: [
+      { kind: "text", key: "question", label: "Question" },
+      { kind: "textarea", key: "answer", label: "Answer", rows: 3 },
+    ],
+  },
+];
 
 const inputClass =
   "w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-200";
@@ -239,6 +301,8 @@ export default function TeachersPageAdminPage() {
   const [ctaButtonLabel, setCtaButtonLabel] = useState("");
   const [ctaButtonUrl, setCtaButtonUrl] = useState("");
 
+  const [profilePage, setProfilePage] = useState<Partial<TeacherProfilePageContent>>({});
+
   const loadSettings = useCallback(async () => {
     try {
       const res = await fetch(
@@ -279,6 +343,7 @@ export default function TeachersPageAdminPage() {
         setCtaSubtext(d.ctaSubtext || "");
         setCtaButtonLabel(d.ctaButtonLabel || "");
         setCtaButtonUrl(d.ctaButtonUrl || "");
+        setProfilePage(d.profilePage ?? {});
       }
     } catch (err) {
       console.error(err);
@@ -337,6 +402,7 @@ export default function TeachersPageAdminPage() {
             ctaSubtext,
             ctaButtonLabel,
             ctaButtonUrl,
+            profilePage,
           }),
         }
       );
@@ -775,6 +841,23 @@ export default function TeachersPageAdminPage() {
             />
           </label>
         </div>
+      </section>
+
+      <section className="rounded-xl border border-neutral-200 bg-white p-5 space-y-4">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-500">
+            Teacher profile pages
+          </h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Shared by every teacher&apos;s own page (/our-teachers/&lt;name&gt;). Each
+            teacher&apos;s photo, bio and story are edited under Teachers.
+          </p>
+        </div>
+        <FieldsEditor
+          fields={PROFILE_PAGE_FIELDS}
+          value={profilePage}
+          onChange={(next) => setProfilePage(next as Partial<TeacherProfilePageContent>)}
+        />
       </section>
 
       <button

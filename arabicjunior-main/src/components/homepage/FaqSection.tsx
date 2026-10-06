@@ -13,6 +13,7 @@ import { FaqTypes } from "@/types";
 import { fetchSettings } from "@/lib/contentApi";
 import { sanitizeHtml } from "@/utils/security";
 import type { FaqSectionContent } from "@/types/FaqSection";
+import { cn } from "@/lib/utils";
 
 /**
  * Used only when the API cannot be reached, so the section still renders with
@@ -82,9 +83,10 @@ interface FaqSectionProps {
    * from the admin screen either way.
    */
   faqData?: FaqTypes[];
+  className?: string;
 }
 
-const FaqSection = async ({ faqData }: FaqSectionProps) => {
+const FaqSection = async ({ faqData, className }: FaqSectionProps) => {
   const content =
     (await fetchSettings<FaqSectionContent>("/faq-section")) ?? FALLBACK;
 
@@ -108,7 +110,10 @@ const FaqSection = async ({ faqData }: FaqSectionProps) => {
 
   return (
     <React.Fragment>
-      <section aria-label="faq-section-home" className="pt-10 md:pt-28 pb-11">
+      <section
+        aria-label="faq-section-home"
+        className={cn("pt-10 md:pt-28 pb-11", className)}
+      >
         <div className="container">
           <div
             aria-label="faq-content-wrapper"

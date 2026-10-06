@@ -9,17 +9,15 @@ import {
   deleteManyTrialLandings
 } from "../controllers/trialLandingController";
 import { authenticateAdmin } from "../middleware/authMiddleware";
-import { imageUpload, handleUploadErrors } from "../config/upload";
+import { multiImageUpload, handleUploadErrors } from "../config/upload";
 
 const router = express.Router();
 
-const uploadMiddleware = imageUpload.fields([
+// multiImageUpload, not imageUpload: the latter caps a request at one file, so
+// saving a hero image and a share image together was rejected outright.
+const uploadMiddleware = multiImageUpload.fields([
   { name: "heroImage", maxCount: 1 },
-  { name: "suitabilityImage", maxCount: 1 },
-  { name: "ctaImage", maxCount: 1 },
-  { name: "curriculaImage", maxCount: 1 },
-  { name: "flexibleImage", maxCount: 1 },
-  { name: "ogImage", maxCount: 1 }
+  { name: "ogImage", maxCount: 1 },
 ]);
 
 // Public route to fetch settings by slug

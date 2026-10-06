@@ -12,14 +12,17 @@ const HeaderActionButton = () => {
   useEffect(() => {
     const fetchContactSettings = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/contact/settings`);
+        const base = process.env.NEXT_PUBLIC_API_BASE_URL;
+        if (!base) return;
+        const res = await fetch(`${base}/contact/settings`);
+        if (!res.ok) return;
         const result = await res.json();
-        if (res.ok && result.data) {
+        if (result?.data) {
           setHeaderPhone(result.data.headerPhone || "+971 50 534 4645");
           setHeaderLink(result.data.headerPhoneLink || "tel:+971505344645");
         }
-      } catch (err) {
-        console.error("Error loading header action button contact settings:", err);
+      } catch {
+        // Silently fall back to default contact settings
       }
     };
     fetchContactSettings();

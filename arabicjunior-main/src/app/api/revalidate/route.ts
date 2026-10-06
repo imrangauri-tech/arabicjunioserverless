@@ -34,6 +34,9 @@ const PATHS = [
   "/welcome",
 ];
 
+/** Route patterns whose every generated page is dropped together. */
+const DYNAMIC_ROUTES = ["/our-teachers/[slug]", "/[slug]"];
+
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -73,5 +76,10 @@ export async function POST(request: Request) {
     revalidatePath(path);
   }
 
-  return NextResponse.json({ success: true, revalidated: PATHS });
+  // Dynamic routes: every teacher profile and every city landing page.
+  for (const route of DYNAMIC_ROUTES) {
+    revalidatePath(route, "page");
+  }
+
+  return NextResponse.json({ success: true, revalidated: [...PATHS, ...DYNAMIC_ROUTES] });
 }

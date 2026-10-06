@@ -32,7 +32,8 @@ import Loader from "@/components/loader";
 import useAuthAdmin from "@/hooks/useAuthAdmin";
 import { revalidateContent } from "@/lib/revalidateContent";
 import MediaPicker from "@/components/admin/MediaPicker";
-import type { Teacher } from "@/types/Teacher";
+import FieldsEditor, { type FieldDef } from "@/components/admin/FieldsEditor";
+import type { Teacher, TeacherPhilosophy, TeacherPhotoHighlight } from "@/types/Teacher";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -58,6 +59,21 @@ const teacherSchema = z
     order: z.coerce.number().int().min(0, "Order cannot be negative."),
     status: z.enum(["draft", "published"]),
     showOnHomepage: z.boolean(),
+
+    // Profile page (/our-teachers/<slug>)
+    slug: z
+      .string()
+      .max(80)
+      .regex(/^[a-z0-9-]*$/, "Use lowercase letters, numbers and hyphens only.")
+      .optional(),
+    country: z.string().max(60).optional(),
+    languages: z.string().max(120).optional(),
+    bio: z.string().max(1200).optional(),
+    quote: z.string().max(400).optional(),
+    photoBadge: z.string().max(60).optional(),
+    photoTitle: z.string().max(80).optional(),
+    photoTitleHighlight: z.string().max(80).optional(),
+    aboutIntro: z.string().max(2000).optional(),
 
     photo: z.any().optional(),
     portrait: z.any().optional(),
@@ -88,6 +104,48 @@ const teacherSchema = z
 
 type TeacherFormData = z.infer<typeof teacherSchema>;
 
+const PROFILE_TEXT_KEYS = [
+  "country",
+  "languages",
+  "bio",
+  "quote",
+  "photoBadge",
+  "photoTitle",
+  "photoTitleHighlight",
+  "aboutIntro",
+] as const;
+
+const PHOTO_HIGHLIGHT_FIELDS: FieldDef[] = [
+  {
+    kind: "list",
+    key: "items",
+    label: "Highlights next to the photo",
+    itemLabel: "highlight",
+    hint: "Shown in the right-hand column of the profile hero. Leave empty to hide that column.",
+    newItem: () => ({ icon: "Smile", title: "", description: "" }),
+    fields: [
+      { kind: "icon", key: "icon" },
+      { kind: "text", key: "title", label: "Title" },
+      { kind: "textarea", key: "description", label: "Description", rows: 2 },
+    ],
+  },
+];
+
+const PHILOSOPHY_FIELDS: FieldDef[] = [
+  {
+    kind: "list",
+    key: "items",
+    label: "Teaching story blocks (numbered 01, 02 …)",
+    itemLabel: "block",
+    newItem: () => ({ icon: "Lightbulb", title: "", paragraphs: [""] }),
+    fields: [
+      { kind: "icon", key: "icon" },
+      { kind: "text", key: "title", label: "Title" },
+      { kind: "lines", key: "paragraphs", label: "Paragraphs", itemLabel: "paragraph" },
+    ],
+  },
+];
+
 export default function TeacherForm({ teacher }: { teacher?: Teacher }) {
   const router = useRouter();
   const { token } = useAuthAdmin();
@@ -110,8 +168,26 @@ export default function TeacherForm({ teacher }: { teacher?: Teacher }) {
       status: teacher?.status ?? "draft",
       showOnHomepage: teacher?.showOnHomepage ?? true,
       hasExistingPhoto: Boolean(teacher?.image),
+      slug: teacher?.slug ?? "",
+      country: teacher?.country ?? "",
+      languages: teacher?.languages ?? "",
+      bio: teacher?.bio ?? "",
+      quote: teacher?.quote ?? "",
+      photoBadge: teacher?.photoBadge ?? "",
+      photoTitle: teacher?.photoTitle ?? "",
+      photoTitleHighlight: teacher?.photoTitleHighlight ?? "",
+      aboutIntro: teacher?.aboutIntro ?? "",
     },
   });
+
+  // Lists live outside react-hook-form: they are edited by FieldsEditor and
+  // posted as JSON, which is all the API needs.
+  const [photoHighlights, setPhotoHighlights] = useState<TeacherPhotoHighlight[]>(
+    teacher?.photoHighlights ?? []
+  );
+  const [philosophies, setPhilosophies] = useState<TeacherPhilosophy[]>(
+    teacher?.philosophies ?? []
+  );
 
   const onSubmit = async (data: TeacherFormData) => {
     if (!token) {
@@ -135,6 +211,12 @@ export default function TeacherForm({ teacher }: { teacher?: Teacher }) {
       formData.append("order", String(data.order));
       formData.append("status", data.status);
       formData.append("showOnHomepage", String(data.showOnHomepage));
+
+      // Empty slug means "generate it from the name" on the server.
+      formData.append("slug", data.slug ?? "");
+      for (const key of PROFILE_TEXT_KEYS) formData.append(key, data[key] ?? "");
+      formData.append("photoHighlights", JSON.stringify(photoHighlights));
+      formData.append("philosophies", JSON.stringify(philosophies));
 
       if (isFile(data.photo)) formData.append("photo", data.photo);
       if (isFile(data.portrait)) formData.append("portrait", data.portrait);
@@ -435,12 +517,141 @@ export default function TeacherForm({ teacher }: { teacher?: Teacher }) {
                     previewClassName="w-32 h-44 rounded-xl object-contain border bg-yellow-50"
                   />
                   <FormDescription>
-                    Used by the tall cards in the About Us carousel. Without it, the
-                    headshot is used instead.
+                    Used by the tall cards in the About Us carousel and the profile
+                    page. Without it, the headshot is used instead.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
+            />
+          </div>
+
+          {/* ---------------- Profile page ---------------- */}
+          <div className="space-y-6 rounded-xl border p-5">
+            <div>
+              <h4 className="text-lg font-semibold">Profile page</h4>
+              <p className="text-sm text-neutral-500">
+                The teacher&apos;s own page, opened from &ldquo;View Full Profile&rdquo;.
+                Qualification, experience and subject above are reused there. Empty
+                fields are simply left off the page.
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Profile URL</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-neutral-500 shrink-0">/our-teachers/</span>
+                      <Input placeholder="generated from the name" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormDescription>Leave empty to generate it from the name.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {(
+                [
+                  ["country", "Country", "Egypt"],
+                  ["languages", "Languages", "Arabic (Native), English (Fluent)"],
+                ] as const
+              ).map(([name, label, placeholder]) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base">{label}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={placeholder} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+
+            {(
+              [
+                ["bio", "Intro paragraph (top of the page)", "Uses “About this teacher” when empty.", 4],
+                ["quote", "Quote under the photo", "A sentence in the teacher’s own words.", 2],
+              ] as const
+            ).map(([name, label, description, rows]) => (
+              <FormField
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">{label}</FormLabel>
+                    <FormControl>
+                      <Textarea rows={rows} {...field} />
+                    </FormControl>
+                    <FormDescription>{description}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {(
+                [
+                  ["photoBadge", "Photo column badge", "ABOUT HER PHOTO"],
+                  ["photoTitle", "Photo column heading", "A Friendly, Supportive"],
+                  ["photoTitleHighlight", "Heading (orange part)", "and Professional Teacher"],
+                ] as const
+              ).map(([name, label, placeholder]) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base">{label}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={placeholder} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+
+            <FieldsEditor
+              fields={PHOTO_HIGHLIGHT_FIELDS}
+              value={{ items: photoHighlights }}
+              onChange={(next) => setPhotoHighlights(next.items as TeacherPhotoHighlight[])}
+            />
+
+            <FormField
+              control={form.control}
+              name="aboutIntro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">&ldquo;About me&rdquo; paragraph</FormLabel>
+                  <FormControl>
+                    <Textarea rows={4} {...field} />
+                  </FormControl>
+                  <FormDescription>Uses &ldquo;About this teacher&rdquo; when empty.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FieldsEditor
+              fields={PHILOSOPHY_FIELDS}
+              value={{ items: philosophies }}
+              onChange={(next) => setPhilosophies(next.items as TeacherPhilosophy[])}
             />
           </div>
         </form>

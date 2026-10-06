@@ -377,6 +377,25 @@ export const updateTeachersPage = async (req: Request, res: Response): Promise<a
     if (ctaButtonUrl !== undefined) settings.ctaButtonUrl = ctaButtonUrl;
     if (ctaEnabled !== undefined) settings.ctaEnabled = Boolean(ctaEnabled);
 
+    // Shared copy for every teacher profile page. Merged over what is stored,
+    // so a client that sends only some of its fields leaves the rest alone.
+    const { profilePage } = req.body;
+    if (profilePage && typeof profilePage === "object" && !Array.isArray(profilePage)) {
+      const next: Record<string, unknown> = { ...profilePage };
+      if (Array.isArray(next.verifiedCards)) {
+        next.verifiedCards = (next.verifiedCards as any[]).filter((c) =>
+          String(c?.title ?? "").trim()
+        );
+      }
+      if (Array.isArray(next.faqs)) {
+        next.faqs = (next.faqs as any[]).filter(
+          (f) => String(f?.question ?? "").trim() && String(f?.answer ?? "").trim()
+        );
+      }
+      const current = (settings.profilePage as any)?.toObject?.() ?? {};
+      settings.set("profilePage", { ...current, ...next });
+    }
+
     await settings.save();
     return res
       .status(200)

@@ -19,13 +19,16 @@ const Footer = () => {
   useEffect(() => {
     const fetchFooterSettings = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/footer-settings`);
+        const base = process.env.NEXT_PUBLIC_API_BASE_URL;
+        if (!base) return;
+        const res = await fetch(`${base}/footer-settings`);
+        if (!res.ok) return;
         const result = await res.json();
-        if (res.ok && result.data) {
+        if (result?.data) {
           setSettings(result.data);
         }
-      } catch (err) {
-        console.error("Error loading footer settings:", err);
+      } catch {
+        // Silently fall back to default footer settings
       }
     };
     fetchFooterSettings();

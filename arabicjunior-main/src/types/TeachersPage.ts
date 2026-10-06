@@ -51,4 +51,26 @@ export interface TeachersPageContent {
   ctaButtonLabel: string;
   ctaButtonUrl: string;
   ctaEnabled: boolean;
+
+  /** Copy shared by every teacher profile page (/our-teachers/<slug>). */
+  profilePage?: TeacherProfilePageContent;
+}
+
+export interface TeacherProfilePageContent {
+  badge: string;
+  salutation: string;
+  aboutLabel: string;
+  verifiedShow: boolean;
+  verifiedBadge: string;
+  verifiedTitle: string;
+  verifiedTitleHighlight: string;
+  verifiedSubtitle: string;
+  verifiedCards: { icon: string; title: string; description: string }[];
+  ctaShow: boolean;
+  ctaHeading: string;
+  ctaSubtext: string;
+  ctaButtonLabel: string;
+  ctaButtonUrl: string;
+  faqShow: boolean;
+  faqs: { question: string; answer: string }[];
 }

@@ -1,55 +1,79 @@
 import { Request, Response } from "express";
-import TrialLanding from "../models/trialLanding";
-import cloudinary from "../config/cloudinary";
+import TrialLanding, { TrialLandingDocument } from "../models/trialLanding";
+import { uploadBuffer, destroyQuietly, UploadedAsset } from "../utils/cloudinaryUpload";
 
-const uploadToCloudinary = async (file: Express.Multer.File) => {
-  const b64 = Buffer.from(file.buffer).toString("base64");
-  const dataUri = `data:${file.mimetype};base64,${b64}`;
-  const result = await cloudinary.uploader.upload(dataUri, {
-    folder: "trial-landing",
-    resource_type: "auto",
-  });
+const DEFAULT_SLUG = "trial-landing";
+const DEFAULT_HERO_IMAGE = "/hero-arabic-kid.jpg";
 
-  return { secure_url: result.secure_url, public_id: result.public_id };
-};
+/** The editable sections, each stored as one nested object. */
+const SECTION_KEYS = ["hero", "curriculum", "whyChoose", "advantage", "families"] as const;
 
-const slugify = (text: string) => {
-  return text
+const SEO_STRING_KEYS = [
+  "metaTitle",
+  "metaDescription",
+  "metaKeywords",
+  "canonicalUrl",
+] as const;
+
+const slugify = (text: string) =>
+  text
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")           // Replace spaces with -
-    .replace(/[^\w\-]+/g, "")       // Remove all non-word chars
-    .replace(/\-\-+/g, "-");        // Replace multiple - with single -
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\-\-+/g, "-") // Replace multiple - with single -
+    .replace(/^-+|-+$/g, "");
+
+/** "abu-dhabi" → "Abu Dhabi"; the default page is the Dubai page. */
+export const cityFromSlug = (slug: string) =>
+  !slug || slug === DEFAULT_SLUG || slug === "landing"
+    ? "Dubai"
+    : slug
+        .split("-")
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+/** Everything a page owns in Cloudinary, for clean-up on delete. */
+const assetsOf = (page: TrialLandingDocument): UploadedAsset[] =>
+  [page.hero?.imagePublicId, page.ogImagePublicId]
+    .filter((id): id is string => Boolean(id))
+    .map((public_id) => ({ public_id, secure_url: "", resource_type: "image" as const }));
+
+/** The editor posts multipart with the content as one JSON string in `data`. */
+const readPayload = (body: any): Record<string, any> => {
+  if (typeof body?.data === "string") {
+    try {
+      const parsed = JSON.parse(body.data);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return body && typeof body === "object" ? body : {};
 };
 
 // GET: Fetch trial landing page settings by slug (Public)
 export const getTrialLandingSettings = async (req: Request, res: Response): Promise<any> => {
   try {
-    const slugParam = req.params.slug || "trial-landing";
-
-    // Auto-clean any accidental duplicates in DB
-    if (slugParam === "trial-landing") {
-      const duplicates = await TrialLanding.find({ slug: "trial-landing" }).sort({ createdAt: -1 });
-      if (duplicates.length > 1) {
-        const [keep, ...removeList] = duplicates;
-        const idsToRemove = removeList.map((d) => d._id);
-        await TrialLanding.deleteMany({ _id: { $in: idsToRemove } });
-      }
-    }
+    const slugParam = req.params.slug || DEFAULT_SLUG;
 
     let settings = await TrialLanding.findOne({ slug: slugParam });
-    
-    // If it's the default slug and doesn't exist, bootstrap it
-    if (!settings && slugParam === "trial-landing") {
-      settings = new TrialLanding({ title: "Free Trial Landing Page", slug: "trial-landing" });
-      await settings.save();
+
+    // The default page always exists, so /trial-landing never 404s on a fresh database.
+    if (!settings && slugParam === DEFAULT_SLUG) {
+      settings = await TrialLanding.create({
+        title: "Free Trial Landing Page",
+        slug: DEFAULT_SLUG,
+        city: cityFromSlug(DEFAULT_SLUG),
+      });
     }
 
     if (!settings) {
       return res.status(404).json({ success: false, message: "Landing page not found" });
     }
-    
+
     res.status(200).json({ success: true, data: settings });
   } catch (error) {
     console.error("Error fetching trial landing settings:", error);
@@ -58,17 +82,11 @@ export const getTrialLandingSettings = async (req: Request, res: Response): Prom
 };
 
 // GET: List all trial landing pages (Admin Only)
-export const listTrialLandings = async (req: Request, res: Response): Promise<any> => {
+export const listTrialLandings = async (_req: Request, res: Response): Promise<any> => {
   try {
-    // Auto-clean any accidental duplicates in DB
-    const duplicates = await TrialLanding.find({ slug: "trial-landing" }).sort({ createdAt: -1 });
-    if (duplicates.length > 1) {
-      const [keep, ...removeList] = duplicates;
-      const idsToRemove = removeList.map((d) => d._id);
-      await TrialLanding.deleteMany({ _id: { $in: idsToRemove } });
-    }
-
-    const list = await TrialLanding.find({}, "_id title slug createdAt updatedAt").sort({ createdAt: -1 });
+    const list = await TrialLanding.find({}, "_id title slug city createdAt updatedAt").sort({
+      createdAt: -1,
+    });
     res.status(200).json({ success: true, data: list });
   } catch (error) {
     console.error("Error listing trial landings:", error);
@@ -93,31 +111,34 @@ export const getTrialLandingById = async (req: Request, res: Response): Promise<
 // POST: Create a new trial landing page (Admin Only)
 export const createTrialLanding = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { title, slug } = req.body;
+    const { title, slug, city } = req.body;
 
-    if (!title || !title.trim()) {
+    if (!title || !String(title).trim()) {
       return res.status(400).json({ success: false, message: "Title is required" });
     }
 
     const targetSlug = slugify(slug || title);
-
-    // Verify uniqueness
-    const existing = await TrialLanding.findOne({ slug: targetSlug });
-    if (existing) {
-      return res.status(400).json({ success: false, message: `Slug "${targetSlug}" is already in use` });
+    if (!targetSlug) {
+      return res.status(400).json({ success: false, message: "Please enter a valid URL slug" });
     }
 
-    const newPage = new TrialLanding({
-      title: title.trim(),
-      slug: targetSlug,
-    });
+    const existing = await TrialLanding.findOne({ slug: targetSlug });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ success: false, message: `Slug "${targetSlug}" is already in use` });
+    }
 
-    await newPage.save();
+    const newPage = await TrialLanding.create({
+      title: String(title).trim(),
+      slug: targetSlug,
+      city: (typeof city === "string" && city.trim()) || cityFromSlug(targetSlug),
+    });
 
     res.status(201).json({
       success: true,
       message: "Landing page created successfully!",
-      data: newPage
+      data: newPage,
     });
   } catch (error) {
     console.error("Error creating landing page:", error);
@@ -127,343 +148,127 @@ export const createTrialLanding = async (req: Request, res: Response): Promise<a
 
 // PUT: Update specific trial landing page settings (Admin Only)
 export const updateTrialLandingSettings = async (req: Request, res: Response): Promise<any> => {
+  const uploaded: UploadedAsset[] = [];
   try {
-    const {
-      title,
-      slug,
-      heroBadgeText,
-      heroHeading,
-      heroHeadingHighlight,
-      heroSubheading,
-      heroDescription1,
-      heroDescription2,
-      heroBullets,
-      heroCtaText,
-      heroCtaSubtext,
-
-      statsShow,
-      statsItems,
-
-      confidenceShow,
-      confidenceBadge,
-      confidenceHeading,
-      confidenceDescription,
-      confidenceCards,
-
-      curriculumFlexShow,
-      curriculumBadge,
-      curriculumHeading,
-      curriculumDescription,
-      curriculumBadgesList,
-      curriculumChecklist,
-      flexibleBadge,
-      flexibleHeading,
-      flexibleDescription,
-      flexibleFeatures,
-
-      moreAboutShow,
-      moreAboutHeading,
-      moreAboutFeatures,
-      testimonialsHeading,
-      testimonialsHeadingHighlight,
-      testimonialsList,
-
-      whySubheader,
-      whyHeading,
-      whyDescription,
-      whyCards,
-
-      processSubheader,
-      processHeading,
-
-      assessSubheader,
-      assessTitle,
-      assessDescription,
-      assessSkills,
-
-      curriculaSubheader,
-      curriculaTitle,
-      curriculaDescription,
-      curriculaBadges,
-
-      chooseSubheader,
-      chooseHeading,
-      chooseCards,
-
-      onboardingSubheader,
-      onboardingHeading,
-      onboardingSteps,
-
-      suitabilitySubheader,
-      suitabilityTitle,
-      suitabilityDescription,
-      suitabilityBullets,
-
-      faqSubheader,
-      faqTitle,
-      faqItems,
-
-      ctaHeading,
-      ctaDescription,
-      ctaButtonText,
-      ctaSubtext,
-
-      metaTitle,
-      metaDescription,
-      metaKeywords,
-      canonicalUrl,
-      indexPage
-    } = req.body;
-
     const settings = await TrialLanding.findById(req.params.id);
     if (!settings) {
       return res.status(404).json({ success: false, message: "Landing page not found" });
     }
 
-    // Helper to parse potential stringified JSON arrays
-    const parseField = (field: any) => {
-      if (typeof field === "string") {
-        try {
-          return JSON.parse(field);
-        } catch (e) {
-          return field;
-        }
-      }
-      return field;
-    };
+    const payload = readPayload(req.body);
 
-    // Update Title and Slug
-    if (title !== undefined && title.trim() !== "") settings.title = title.trim();
-    
-    if (slug !== undefined && slug.trim() !== "") {
-      const targetSlug = slugify(slug);
-      if (targetSlug !== settings.slug) {
-        // Verify uniqueness
+    if (typeof payload.title === "string" && payload.title.trim()) {
+      settings.title = payload.title.trim();
+    }
+
+    if (typeof payload.slug === "string" && payload.slug.trim()) {
+      const targetSlug = slugify(payload.slug);
+      if (targetSlug && targetSlug !== settings.slug) {
+        // The default page backs the /trial-landing URL; renaming it would just
+        // make the public route recreate a fresh copy.
+        if (settings.slug === DEFAULT_SLUG) {
+          return res
+            .status(400)
+            .json({ success: false, message: "The default page's URL cannot be changed" });
+        }
         const existing = await TrialLanding.findOne({ slug: targetSlug });
         if (existing) {
-          return res.status(400).json({ success: false, message: `Slug "${targetSlug}" is already in use` });
+          return res
+            .status(400)
+            .json({ success: false, message: `Slug "${targetSlug}" is already in use` });
         }
         settings.slug = targetSlug;
       }
     }
 
-    // Update Text Fields (Hero)
-    if (heroBadgeText !== undefined) settings.heroBadgeText = heroBadgeText;
-    if (heroHeading !== undefined) settings.heroHeading = heroHeading;
-    if (heroHeadingHighlight !== undefined) settings.heroHeadingHighlight = heroHeadingHighlight;
-    if (heroSubheading !== undefined) settings.heroSubheading = heroSubheading;
-    if (heroDescription1 !== undefined) settings.heroDescription1 = heroDescription1;
-    if (heroDescription2 !== undefined) settings.heroDescription2 = heroDescription2;
-    if (heroBullets !== undefined) settings.heroBullets = parseField(heroBullets);
-    if (heroCtaText !== undefined) settings.heroCtaText = heroCtaText;
-    if (heroCtaSubtext !== undefined) settings.heroCtaSubtext = heroCtaSubtext;
+    if (typeof payload.city === "string") settings.city = payload.city.trim();
 
-    // Update Stats Section
-    if (statsShow !== undefined) {
-      settings.statsShow = statsShow === "true" || statsShow === true;
-    }
-    if (statsItems !== undefined) settings.statsItems = parseField(statsItems);
+    for (const key of SECTION_KEYS) {
+      const incoming = payload[key];
+      if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) continue;
 
-    // Update Confidence & Communication Section
-    if (confidenceShow !== undefined) {
-      settings.confidenceShow = confidenceShow === "true" || confidenceShow === true;
-    }
-    if (confidenceBadge !== undefined) settings.confidenceBadge = confidenceBadge;
-    if (confidenceHeading !== undefined) settings.confidenceHeading = confidenceHeading;
-    if (confidenceDescription !== undefined) settings.confidenceDescription = confidenceDescription;
-    if (confidenceCards !== undefined) settings.confidenceCards = parseField(confidenceCards);
-
-    // Update Curriculum & Flexible Learning Section
-    if (curriculumFlexShow !== undefined) {
-      settings.curriculumFlexShow = curriculumFlexShow === "true" || curriculumFlexShow === true;
-    }
-    if (curriculumBadge !== undefined) settings.curriculumBadge = curriculumBadge;
-    if (curriculumHeading !== undefined) settings.curriculumHeading = curriculumHeading;
-    if (curriculumDescription !== undefined) settings.curriculumDescription = curriculumDescription;
-    if (curriculumBadgesList !== undefined) settings.curriculumBadgesList = parseField(curriculumBadgesList);
-    if (curriculumChecklist !== undefined) settings.curriculumChecklist = parseField(curriculumChecklist);
-
-    if (flexibleBadge !== undefined) settings.flexibleBadge = flexibleBadge;
-    if (flexibleHeading !== undefined) settings.flexibleHeading = flexibleHeading;
-    if (flexibleDescription !== undefined) settings.flexibleDescription = flexibleDescription;
-    if (flexibleFeatures !== undefined) settings.flexibleFeatures = parseField(flexibleFeatures);
-
-    // Update More About Arabic Juniors & Testimonials Section
-    if (moreAboutShow !== undefined) {
-      settings.moreAboutShow = moreAboutShow === "true" || moreAboutShow === true;
-    }
-    if (moreAboutHeading !== undefined) settings.moreAboutHeading = moreAboutHeading;
-    if (moreAboutFeatures !== undefined) settings.moreAboutFeatures = parseField(moreAboutFeatures);
-    if (testimonialsHeading !== undefined) settings.testimonialsHeading = testimonialsHeading;
-    if (testimonialsHeadingHighlight !== undefined) settings.testimonialsHeadingHighlight = testimonialsHeadingHighlight;
-    if (testimonialsList !== undefined) settings.testimonialsList = parseField(testimonialsList);
-
-    // Update Text Fields (Why)
-    if (whySubheader !== undefined) settings.whySubheader = whySubheader;
-    if (whyHeading !== undefined) settings.whyHeading = whyHeading;
-    if (whyDescription !== undefined) settings.whyDescription = whyDescription;
-    if (whyCards !== undefined) settings.whyCards = parseField(whyCards);
-
-    // Update Text Fields (Process)
-    if (processSubheader !== undefined) settings.processSubheader = processSubheader;
-    if (processHeading !== undefined) settings.processHeading = processHeading;
-
-    // Update Text Fields (Skills & Assessment)
-    if (assessSubheader !== undefined) settings.assessSubheader = assessSubheader;
-    if (assessTitle !== undefined) settings.assessTitle = assessTitle;
-    if (assessDescription !== undefined) settings.assessDescription = assessDescription;
-    if (assessSkills !== undefined) settings.assessSkills = parseField(assessSkills);
-
-    // Update Text Fields (Curricula)
-    if (curriculaSubheader !== undefined) settings.curriculaSubheader = curriculaSubheader;
-    if (curriculaTitle !== undefined) settings.curriculaTitle = curriculaTitle;
-    if (curriculaDescription !== undefined) settings.curriculaDescription = curriculaDescription;
-    if (curriculaBadges !== undefined) settings.curriculaBadges = parseField(curriculaBadges);
-
-    // Update Text Fields (Choose)
-    if (chooseSubheader !== undefined) settings.chooseSubheader = chooseSubheader;
-    if (chooseHeading !== undefined) settings.chooseHeading = chooseHeading;
-    if (chooseCards !== undefined) settings.chooseCards = parseField(chooseCards);
-
-    // Update Text Fields (Onboarding)
-    if (onboardingSubheader !== undefined) settings.onboardingSubheader = onboardingSubheader;
-    if (onboardingHeading !== undefined) settings.onboardingHeading = onboardingHeading;
-    if (onboardingSteps !== undefined) settings.onboardingSteps = parseField(onboardingSteps);
-
-    // Update Text Fields (Suitability)
-    if (suitabilitySubheader !== undefined) settings.suitabilitySubheader = suitabilitySubheader;
-    if (suitabilityTitle !== undefined) settings.suitabilityTitle = suitabilityTitle;
-    if (suitabilityDescription !== undefined) settings.suitabilityDescription = suitabilityDescription;
-    if (suitabilityBullets !== undefined) settings.suitabilityBullets = parseField(suitabilityBullets);
-
-    // Update Text Fields (FAQ)
-    if (faqSubheader !== undefined) settings.faqSubheader = faqSubheader;
-    if (faqTitle !== undefined) settings.faqTitle = faqTitle;
-    if (faqItems !== undefined) settings.faqItems = parseField(faqItems);
-
-    // Update Text Fields (CTA)
-    if (ctaHeading !== undefined) settings.ctaHeading = ctaHeading;
-    if (ctaDescription !== undefined) settings.ctaDescription = ctaDescription;
-    if (ctaButtonText !== undefined) settings.ctaButtonText = ctaButtonText;
-    if (ctaSubtext !== undefined) settings.ctaSubtext = ctaSubtext;
-
-    // Update SEO Meta Fields
-    if (metaTitle !== undefined) settings.metaTitle = metaTitle;
-    if (metaDescription !== undefined) settings.metaDescription = metaDescription;
-    if (metaKeywords !== undefined) settings.metaKeywords = metaKeywords;
-    if (canonicalUrl !== undefined) settings.canonicalUrl = canonicalUrl;
-    if (indexPage !== undefined) {
-      settings.indexPage = indexPage === "true" || indexPage === true;
+      const next = { ...incoming };
+      // Image fields are owned by the upload handling below, never by the form.
+      if (key === "hero") {
+        delete next.imageUrl;
+        delete next.imagePublicId;
+      }
+      const current = ((settings.get(key) as any)?.toObject?.() ?? {}) as Record<string, unknown>;
+      settings.set(key, { ...current, ...next });
     }
 
-    // Handle Image Uploads
+    for (const key of SEO_STRING_KEYS) {
+      if (typeof payload[key] === "string") settings.set(key, payload[key]);
+    }
+    if (payload.indexPage !== undefined) {
+      settings.indexPage = payload.indexPage === true || payload.indexPage === "true";
+    }
+
+    // ---- Images -----------------------------------------------------------
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const replaced: UploadedAsset[] = [];
 
-    // 1. Hero Image
-    if (files?.["heroImage"]?.[0]) {
-      if (settings.heroImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.heroImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous hero image:", err);
-        }
+    const heroFile = files?.heroImage?.[0];
+    if (heroFile) {
+      const result = await uploadBuffer(heroFile, "trial-landing");
+      uploaded.push(result);
+      if (settings.hero.imagePublicId) {
+        replaced.push({ public_id: settings.hero.imagePublicId, secure_url: "", resource_type: "image" });
       }
-      const uploaded = await uploadToCloudinary(files["heroImage"][0]);
-      settings.heroImageUrl = uploaded.secure_url;
-      settings.heroImagePublicId = uploaded.public_id;
+      settings.hero.imageUrl = result.secure_url;
+      settings.hero.imagePublicId = result.public_id;
+    } else if (payload.removeHeroImage === true) {
+      if (settings.hero.imagePublicId) {
+        replaced.push({ public_id: settings.hero.imagePublicId, secure_url: "", resource_type: "image" });
+      }
+      settings.hero.imageUrl = DEFAULT_HERO_IMAGE;
+      settings.hero.imagePublicId = "";
     }
 
-    // 2. Suitability Image
-    if (files?.["suitabilityImage"]?.[0]) {
-      if (settings.suitabilityImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.suitabilityImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous suitability image:", err);
-        }
-      }
-      const uploaded = await uploadToCloudinary(files["suitabilityImage"][0]);
-      settings.suitabilityImageUrl = uploaded.secure_url;
-      settings.suitabilityImagePublicId = uploaded.public_id;
-    }
-
-    // 3. CTA Image
-    if (files?.["ctaImage"]?.[0]) {
-      if (settings.ctaImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.ctaImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous cta image:", err);
-        }
-      }
-      const uploaded = await uploadToCloudinary(files["ctaImage"][0]);
-      settings.ctaImageUrl = uploaded.secure_url;
-      settings.ctaImagePublicId = uploaded.public_id;
-    }
-
-    // 4. Curricula Image (Dubai Skyline)
-    if (files?.["curriculaImage"]?.[0]) {
-      if (settings.curriculaImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.curriculaImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous curricula image:", err);
-        }
-      }
-      const uploaded = await uploadToCloudinary(files["curriculaImage"][0]);
-      settings.curriculaImageUrl = uploaded.secure_url;
-      settings.curriculaImagePublicId = uploaded.public_id;
-    }
-
-    // 5. Flexible Learning Student Image
-    if (files?.["flexibleImage"]?.[0]) {
-      if (settings.flexibleImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.flexibleImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous flexible student image:", err);
-        }
-      }
-      const uploaded = await uploadToCloudinary(files["flexibleImage"][0]);
-      settings.flexibleImageUrl = uploaded.secure_url;
-      settings.flexibleImagePublicId = uploaded.public_id;
-    }
-
-    // 6. SEO Open Graph Image
-    if (files?.["ogImage"]?.[0]) {
+    const ogFile = files?.ogImage?.[0];
+    if (ogFile) {
+      const result = await uploadBuffer(ogFile, "trial-landing");
+      uploaded.push(result);
       if (settings.ogImagePublicId) {
-        try {
-          await cloudinary.uploader.destroy(settings.ogImagePublicId);
-        } catch (err) {
-          console.error("Failed to delete previous OG image:", err);
-        }
+        replaced.push({ public_id: settings.ogImagePublicId, secure_url: "", resource_type: "image" });
       }
-      const uploaded = await uploadToCloudinary(files["ogImage"][0]);
-      settings.ogImageUrl = uploaded.secure_url;
-      settings.ogImagePublicId = uploaded.public_id;
+      settings.ogImageUrl = result.secure_url;
+      settings.ogImagePublicId = result.public_id;
+    } else if (payload.removeOgImage === true) {
+      if (settings.ogImagePublicId) {
+        replaced.push({ public_id: settings.ogImagePublicId, secure_url: "", resource_type: "image" });
+      }
+      settings.ogImageUrl = "";
+      settings.ogImagePublicId = "";
     }
 
     await settings.save();
+
+    // Old images are dropped only once the new ones are safely saved.
+    await destroyQuietly(replaced);
 
     res.status(200).json({
       success: true,
       message: "Landing page updated successfully!",
       data: settings,
     });
-  } catch (error) {
+  } catch (error: any) {
+    await destroyQuietly(uploaded);
     console.error("Error updating trial landing settings:", error);
-    res.status(500).json({ success: false, message: "Server error during settings update" });
+    const message =
+      error?.name === "ValidationError" || error?.name === "CastError"
+        ? error.message
+        : "Server error during settings update";
+    res.status(error?.name === "ValidationError" ? 400 : 500).json({ success: false, message });
   }
 };
 
-// DELETE: Delete specific trial landing page (Admin Only)
 /**
  * POST: Delete several landing pages at once (Admin Only).
  *
- * The last remaining default page is skipped rather than deleted, exactly as
- * the single delete refuses it — a select-all must not be able to take the live
- * /trial-landing page off the site. The response says how many were skipped so
- * the count on screen is never a surprise.
+ * The default /trial-landing page is skipped rather than deleted, exactly as
+ * the single delete refuses it. The response says how many were skipped so the
+ * count on screen is never a surprise.
  */
 export const deleteManyTrialLandings = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -481,32 +286,16 @@ export const deleteManyTrialLandings = async (req: Request, res: Response): Prom
     }
 
     const pages = await TrialLanding.find({ _id: { $in: ids } });
-    const defaultTotal = await TrialLanding.countDocuments({ slug: "trial-landing" });
-
-    const deletable: any[] = [];
-    let defaultsKept = 0;
-    let remainingDefaults = defaultTotal;
-
-    for (const page of pages) {
-      if (page.slug === "trial-landing" && remainingDefaults <= 1) {
-        defaultsKept += 1;
-        continue;
-      }
-      if (page.slug === "trial-landing") remainingDefaults -= 1;
-      deletable.push(page);
-    }
+    const deletable = pages.filter((page) => page.slug !== DEFAULT_SLUG);
+    const defaultsKept = pages.length - deletable.length;
 
     if (!deletable.length) {
-      // Only blame the default page when it really was the obstacle. Ids that
-      // simply do not exist any more are not an error — they read as "somebody
-      // already deleted this", which is exactly what happened.
       if (defaultsKept) {
         return res.status(400).json({
           success: false,
           message: "The default trial landing page cannot be deleted",
         });
       }
-
       return res.status(200).json({
         success: true,
         message: "0 landing page(s) deleted successfully!",
@@ -515,23 +304,8 @@ export const deleteManyTrialLandings = async (req: Request, res: Response): Prom
       });
     }
 
-    const deletableIds = deletable.map((page) => page._id);
-    const result = await TrialLanding.deleteMany({ _id: { $in: deletableIds } });
-
-    for (const page of deletable) {
-      for (const publicId of [
-        page.heroImagePublicId,
-        page.suitabilityImagePublicId,
-        page.ctaImagePublicId,
-      ]) {
-        if (!publicId) continue;
-        try {
-          await cloudinary.uploader.destroy(publicId);
-        } catch (err) {
-          console.error(`Could not remove Cloudinary asset ${publicId}:`, err);
-        }
-      }
-    }
+    const result = await TrialLanding.deleteMany({ _id: { $in: deletable.map((p) => p._id) } });
+    await destroyQuietly(deletable.flatMap(assetsOf));
 
     res.status(200).json({
       success: true,
@@ -547,6 +321,7 @@ export const deleteManyTrialLandings = async (req: Request, res: Response): Prom
   }
 };
 
+// DELETE: Delete specific trial landing page (Admin Only)
 export const deleteTrialLanding = async (req: Request, res: Response): Promise<any> => {
   try {
     const settings = await TrialLanding.findById(req.params.id);
@@ -554,31 +329,16 @@ export const deleteTrialLanding = async (req: Request, res: Response): Promise<a
       return res.status(404).json({ success: false, message: "Landing page not found" });
     }
 
-    // If it's the default one, only block deletion if it's the ONLY default page
-    if (settings.slug === "trial-landing") {
-      const count = await TrialLanding.countDocuments({ slug: "trial-landing" });
-      if (count <= 1) {
-        return res.status(400).json({ success: false, message: "Default trial landing page cannot be deleted" });
-      }
+    if (settings.slug === DEFAULT_SLUG) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Default trial landing page cannot be deleted" });
     }
 
-    // Cleanup images in Cloudinary
-    if (settings.heroImagePublicId) {
-      try { await cloudinary.uploader.destroy(settings.heroImagePublicId); } catch(e){}
-    }
-    if (settings.suitabilityImagePublicId) {
-      try { await cloudinary.uploader.destroy(settings.suitabilityImagePublicId); } catch(e){}
-    }
-    if (settings.ctaImagePublicId) {
-      try { await cloudinary.uploader.destroy(settings.ctaImagePublicId); } catch(e){}
-    }
+    await settings.deleteOne();
+    await destroyQuietly(assetsOf(settings));
 
-    await TrialLanding.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      message: "Landing page deleted successfully!",
-    });
+    res.status(200).json({ success: true, message: "Landing page deleted successfully!" });
   } catch (error) {
     console.error("Error deleting landing page:", error);
     res.status(500).json({ success: false, message: "Server error during landing page deletion" });

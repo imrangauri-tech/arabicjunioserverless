@@ -11,6 +11,7 @@ import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { images } from "@/constants/images";
 import Image from "next/image";
+import Link from "next/link";
 import type { Teacher } from "@/types/Teacher";
 import Reveal from "@/components/Reveal";
 
@@ -163,6 +164,19 @@ const TeacherCard: React.FC<TeacherCardProps> = ({ teachersData }) => {
                     >
                       {teacher.shortDescription}
                     </p>
+
+                    {teacher.slug && (
+                      <div className="mt-6">
+                        <Button
+                          asChild
+                          className="bg-white text-[#FF5A1F] hover:bg-white/90 font-bold rounded-full px-6 shadow-md transition-transform hover:scale-105"
+                        >
+                          <Link href={`/our-teachers/${teacher.slug}`}>
+                            View Full Profile
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* FLOATING ELEMENTs */}

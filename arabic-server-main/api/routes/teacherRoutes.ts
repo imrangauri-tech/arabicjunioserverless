@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getPublishedTeachers,
+  getPublishedTeacherBySlug,
   getTeachers,
   getTeacherById,
   createTeacher,
@@ -22,6 +23,8 @@ const uploadMiddleware = multiImageUpload.fields([
 
 // Public — teachers page, homepage slider, About Us carousel.
 router.get("/teachers", getPublishedTeachers);
+// Profile page at /our-teachers/<slug>.
+router.get("/teachers/:slug", getPublishedTeacherBySlug);
 
 // Admin. authenticateAdmin runs before multer so an unauthenticated request is
 // rejected before its files are read into memory.
