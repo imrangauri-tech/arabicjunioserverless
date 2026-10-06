@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useCountryCode } from "@/hooks/useCountry";
 import { WhatsAppIcon } from "./WhatsAppIcon";
+import ChatMessageContent from "./ChatMessageContent";
 
 interface Message {
   id: string;
@@ -80,51 +81,6 @@ const FALLBACK_CONFIG: ChatbotConfig = {
   voiceInputEnabled: false,
   voiceReplyEnabled: false,
   voiceLanguage: "en-US",
-};
-
-/**
- * Renders the [label](/path) links the bot writes.
- *
- * The previous version split on the link pattern and read fixed positions out
- * of the result, so a reply with two links rendered the first one and dropped
- * the rest of the sentence. This walks every match instead.
- */
-const renderMessageText = (text: string): React.ReactNode => {
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-  const nodes: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) nodes.push(text.slice(lastIndex, match.index));
-
-    const href = match[2];
-    // Only site paths and plain http links; anything else (javascript:, data:)
-    // is left as text rather than turned into something clickable.
-    const safe = /^(\/|https?:\/\/)/i.test(href);
-
-    nodes.push(
-      safe ? (
-        <a
-          key={`link-${key++}`}
-          href={href}
-          target={href.startsWith("/") ? undefined : "_blank"}
-          rel="noreferrer"
-          className="underline font-bold text-orange-500"
-        >
-          {match[1]}
-        </a>
-      ) : (
-        match[1]
-      )
-    );
-
-    lastIndex = pattern.lastIndex;
-  }
-
-  if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
-  return nodes.length ? nodes : text;
 };
 
 /**
@@ -606,19 +562,21 @@ const ChatbotWidget = () => {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex flex-col max-w-[80%] ${
-                      msg.sender === "user" ? "self-end items-end" : "self-start items-start"
+                    className={`flex flex-col ${
+                      msg.sender === "user"
+                        ? "max-w-[80%] self-end items-end"
+                        : "max-w-[90%] self-start items-start"
                     }`}
                   >
                     <div
                       style={msg.sender === "user" ? accent : undefined}
-                      className={`p-3 rounded-2xl text-sm whitespace-pre-wrap ${
+                      className={`p-3 rounded-2xl text-sm ${
                         msg.sender === "user"
-                          ? "text-white rounded-br-none"
-                          : "bg-white border text-neutral-800 rounded-bl-none shadow-sm"
+                          ? "text-white rounded-br-none whitespace-pre-wrap"
+                          : "bg-white border border-neutral-100 text-neutral-700 rounded-bl-none shadow-sm"
                       }`}
                     >
-                      {renderMessageText(msg.text)}
+                      {msg.sender === "user" ? msg.text : <ChatMessageContent text={msg.text} />}
                     </div>
                     <span className="text-[9px] text-neutral-400 mt-1 px-1">
                       {msg.timestamp.toLocaleTimeString([], {

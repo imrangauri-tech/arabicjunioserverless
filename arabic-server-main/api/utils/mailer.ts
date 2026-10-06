@@ -36,6 +36,8 @@ export interface DeliverParams {
   bcc?: Recipient[];
   subject: string;
   htmlContent: string;
+  /** Where "Reply" goes, e.g. the person who filled in the form. */
+  replyTo?: Recipient;
 }
 
 type Transport = "smtp" | "api" | "none";
@@ -122,6 +124,7 @@ export const deliver = async ({
   bcc,
   subject,
   htmlContent,
+  replyTo,
 }: DeliverParams): Promise<brevo.CreateSmtpEmail> => {
   const transport = activeTransport();
   announce(transport);
@@ -142,6 +145,7 @@ export const deliver = async ({
         bcc: bcc?.length ? bcc.map(formatAddress).join(", ") : undefined,
         subject,
         html: htmlContent,
+        replyTo: replyTo?.email ? formatAddress(replyTo) : undefined,
       });
       console.log("Email sent via SMTP:", info.messageId);
       return { messageId: info.messageId };
@@ -153,6 +157,7 @@ export const deliver = async ({
       ...(bcc?.length ? { bcc: bcc.map((r) => ({ email: r.email, name: r.name })) } : {}),
       subject,
       htmlContent,
+      ...(replyTo?.email ? { replyTo: { email: replyTo.email, name: replyTo.name } } : {}),
     });
     console.log("Email sent via Brevo API:", response.body);
     return response.body as brevo.CreateSmtpEmail;

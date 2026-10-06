@@ -41,7 +41,7 @@ export const registerUser: RequestHandler = async (
     await sendTrialSessionEmailToUser({ ...body });
 
     // send email to admin after register a user for trial
-    await sendTrialEmailToAdmin({ ...body });
+    await sendTrialEmailToAdmin({ ...body }, clientInfo);
 
     res.status(200).json({ message: "Registration successful. Email sent!" });
   } catch (error: any) {

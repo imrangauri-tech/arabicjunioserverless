@@ -3,8 +3,7 @@ import OurValues from "./components/OurValues";
 import OurMission from "./components/OurMission";
 import AboutHero from "./components/AboutHero";
 import AboutArabicJuniors from "./components/AboutArabicJuniors";
-import OurTeacher from "./components/OurTeacher";
-import { FaqSection } from "@/components/homepage";
+import { FaqSection, TeachersSlider } from "@/components/homepage";
 import { FaqTypes } from "@/types";
 
 const FAQ_DATA: FaqTypes[] = [
@@ -39,10 +38,11 @@ const AboutUsPage = () => {
   return (
     <React.Fragment>
       <AboutHero />
-      <AboutArabicJuniors />
       <OurMission />
+      <AboutArabicJuniors />
       <OurValues />
-      <OurTeacher />
+      {/* Same teachers section as the homepage, so both pages stay in step. */}
+      <TeachersSlider />
       <FaqSection faqData={FAQ_DATA} />
     </React.Fragment>
   );

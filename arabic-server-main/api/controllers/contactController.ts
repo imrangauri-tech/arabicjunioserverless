@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import ContactMessage from "../models/contactMessage";
 import ContactSettings from "../models/contactSettings";
 import { sendEmailToAdmin } from "../utils/sendEmailToAdmin";
-import { emailLayout, detailTable, button, spacer, mailLink, nl2br } from "../utils/emailTemplate";
+import { contactMessageAdminEmail } from "../utils/emails/contactMessageAdmin";
+import { contactAcknowledgementEmail } from "../utils/emails/contactAcknowledgement";
+import { sendEmail } from "../utils/email";
 import { createAdminNotification } from "../utils/createNotification";
 
 // POST: Submit a contact message (Public)
@@ -28,33 +30,38 @@ export const submitContactMessage = async (req: Request, res: Response) => {
             data: { id: newContact._id, fullName, email }
         });
 
-        const htmlContent = emailLayout({
-            preheader: `${fullName} — ${contactingPurpose || "General enquiry"}`,
-            eyebrow: "New contact message",
-            title: fullName,
-            accent: "orange",
-            content: `
-              ${detailTable([
-                  { label: "Name", value: fullName },
-                  { label: "Email", value: mailLink(email) },
-                  { label: "Purpose", value: contactingPurpose },
-                  { label: "Message", value: nl2br(message), wide: true },
-              ])}
-              ${spacer(6)}
-              ${button({ label: "Reply to sender", url: `mailto:${email}` })}
-              ${spacer(10)}
-            `,
-            footerNote: "Submitted through the contact form on arabicjuniors.com.",
+        const htmlContent = contactMessageAdminEmail({
+            fullName,
+            email,
+            purpose: contactingPurpose,
+            message,
         });
 
         // Send email notification safely
         try {
             await sendEmailToAdmin({
-                subject: "New Contact Message",
+                subject: `New contact message: ${fullName}`,
                 htmlContent,
+                // "Reply to Sender" and the mail client's Reply both reach the visitor.
+                replyTo: email ? { email, name: fullName } : undefined,
             });
         } catch (emailErr) {
             console.error("Email notification error (non-blocking):", emailErr);
+        }
+
+        // Auto-reply to the visitor. Their message is already saved and the
+        // team notified, so a failure here must not turn into an error.
+        if (email) {
+            try {
+                await sendEmail({
+                    toEmail: email,
+                    toName: fullName || "",
+                    subject: "Thank you for contacting Arabic Juniors",
+                    htmlContent: contactAcknowledgementEmail({ fullName, message }),
+                });
+            } catch (emailErr) {
+                console.error("Contact auto-reply error (non-blocking):", emailErr);
+            }
         }
 
         res.status(201).json({ message: "Your message has been sent successfully!" });

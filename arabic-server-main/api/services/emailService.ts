@@ -2,6 +2,12 @@ import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { sendEmail } from "../utils/email";
 import { sendEmailToAdmin } from "../utils/sendEmailToAdmin";
+import { studentRegistrationAdminEmail } from "../utils/emails/studentRegistrationAdmin";
+import { studentEnrolmentConfirmationEmail } from "../utils/emails/studentEnrolmentConfirmation";
+import { trialClassConfirmationEmail } from "../utils/emails/trialClassConfirmation";
+import { teacherApplicationReceivedEmail } from "../utils/emails/teacherApplicationReceived";
+import { teacherApplicationAdminEmail } from "../utils/emails/teacherApplicationAdmin";
+import { trialRequestAdminEmail, type TrialClientInfo } from "../utils/emails/trialRequestAdmin";
 import {
   emailLayout,
   detailTable,
@@ -90,34 +96,13 @@ export const sendTrialSessionEmailToUser = async ({
   email,
   firstName,
 }: TrialRegFormTypes) => {
-  const subject = "Your free trial class is booked — Arabic Juniors";
-  const when = uaeDate(classStartDate);
+  const subject = "Your free trial class is confirmed — Arabic Juniors";
 
-  const html = emailLayout({
-    preheader: `We have your trial request for ${when || "your chosen date"}. Our team will confirm shortly.`,
-    eyebrow: "Trial request received",
-    title: `Thank you, ${firstName}`,
-    accent: "orange",
-    content: `
-      ${paragraph("We've received your request for a free trial class. Here is what you asked for:")}
-      ${callout({
-        tone: "blue",
-        title: `${when}${classStartTime ? ` at ${classStartTime}` : ""}`,
-        body: "Times shown in UAE time (GMT+4).",
-      })}
-      ${spacer()}
-      ${heading("What happens next")}
-      ${paragraph(
-        "Our team will contact you shortly to confirm the exact time and match your child with a suitable teacher. Please allow up to 12 hours for a reply."
-      )}
-      ${paragraph(
-        `If you'd like to reach us sooner, message us on WhatsApp at <a href="https://wa.me/971509921470" style="color:#0B46AD;font-weight:600;text-decoration:none;">+971 50 992 1470</a>.`
-      )}
-      ${spacer(6)}
-      ${button({ label: "Message us on WhatsApp", url: "https://wa.me/971509921470" })}
-      ${spacer(10)}
-    `,
-    footerNote: "No payment is needed for the trial class.",
+  // Branded template (utils/emails/trialClassConfirmation.ts).
+  const html = trialClassConfirmationEmail({
+    firstName: firstName || "",
+    trialDate: uaeDate(classStartDate),
+    trialTime: classStartTime || "",
   });
 
   await sendEmail({ toEmail: email, toName: firstName, subject, htmlContent: html });
@@ -127,32 +112,10 @@ export const sendTeacherRegistrationReplyEmail = async ({
   email,
   first_name,
 }: TeacherRegistrationTypes) => {
-  const subject = "We've received your application — Arabic Juniors";
+  const subject = "Your teacher application has been received — Arabic Juniors";
 
-  const html = emailLayout({
-    preheader: "Your teaching application has reached our recruitment team.",
-    eyebrow: "Application received",
-    title: `Thank you, ${first_name}`,
-    accent: "blue",
-    content: `
-      ${paragraph(
-        "Thank you for applying to teach with Arabic Juniors. Your application has been received and our recruitment team will review it carefully."
-      )}
-      ${spacer(4)}
-      ${heading("What happens next")}
-      ${paragraph(
-        "We'll assess your qualifications and teaching experience, and get in touch if your profile matches a current opening. Please allow a few days for a response."
-      )}
-      ${spacer(4)}
-      ${callout({
-        tone: "green",
-        title: "No further action needed right now",
-        body: "There is nothing to send us at this stage. We'll reach out directly if we need anything more.",
-      })}
-      ${spacer(10)}
-    `,
-    footerNote: "We appreciate your interest in joining our team.",
-  });
+  // Branded template (utils/emails/teacherApplicationReceived.ts).
+  const html = teacherApplicationReceivedEmail({ firstName: first_name || "" });
 
   await sendEmail({ toEmail: email, toName: first_name, subject, htmlContent: html });
 };
@@ -180,35 +143,23 @@ export const sendStudentRegConfirmationEmail = async ({
   monthlyHours,
 }: StudentRegConfEmailParams) => {
   const subject = "You're enrolled — Arabic Juniors";
-  const when = uaeDate(classStartDate);
 
-  const rows: DetailRow[] = [
-    { label: "Pricing package", value: selectedPackage },
-    { label: "Monthly hours", value: monthlyHours },
-    { label: "Preferred days", value: preferredDays?.join(", ") },
-    { label: "Classes begin", value: [when, classStartTime].filter(Boolean).join(" at ") },
-  ];
-
-  const html = emailLayout({
-    preheader: `Classes begin ${when || "soon"}. Your teacher will be in touch shortly.`,
-    eyebrow: "Enrolment confirmed",
-    title: `Welcome, ${fullName(firstName, lastName)}`,
-    accent: "green",
-    content: `
-      ${paragraph("We're delighted to have you starting your Arabic learning journey with us. Here are your enrolment details:")}
-      ${detailTable(rows)}
-      ${spacer()}
-      ${callout({
-        tone: "blue",
-        title: "Your teacher will contact you shortly",
-        body: "They'll confirm the joining link and settle the weekly schedule with you before the first class.",
-      })}
-      ${spacer(10)}
-    `,
-    footerNote: "All times are UAE time (GMT+4).",
+  // Branded template (utils/emails/studentEnrolmentConfirmation.ts).
+  const html = studentEnrolmentConfirmationEmail({
+    firstName: firstName || "",
+    packageLabel: selectedPackage || "",
+    monthlyHours,
+    preferredDays: preferredDays?.join(", ") || "",
+    startDate: uaeDate(classStartDate),
+    preferredTime: classStartTime || "",
   });
 
-  return await sendEmail({ toEmail: email, toName: firstName, subject, htmlContent: html });
+  return await sendEmail({
+    toEmail: email,
+    toName: fullName(firstName, lastName),
+    subject,
+    htmlContent: html,
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -233,97 +184,68 @@ export const sendStudentRegNotifToAdmin = async ({
 }: StudentRegistrationFormTypes) => {
   const name = fullName(first_name, last_name);
   const subject = `Student registration: ${name}`;
-  const submittedAt = uaeNow();
 
-  const rows: DetailRow[] = [
-    { label: "Student", value: name },
-    { label: "Email", value: mailLink(email) },
-    { label: "Phone", value: telLink(phone_number) },
-    { label: "Gender", value: titleCase(gender) },
-    { label: "City", value: city },
-    { label: "Grade", value: class_grade },
-    { label: "School", value: school_name },
-    { label: "Curriculum", value: curriculum },
-    { label: "Class type", value: class_type },
-    { label: "Package", value: pricing_package },
-    { label: "Start date", value: uaeDate(class_start_date) },
-    { label: "Preferred time", value: preferred_time },
-    { label: "Preferred days", value: preferred_days?.join(", ") },
-  ];
-
-  const html = emailLayout({
-    preheader: `${name} · Grade ${class_grade} · ${pricing_package || "no package"}`,
-    eyebrow: "New student registration",
-    title: name,
-    accent: "green",
-    content: `
-      ${callout({
-        tone: "green",
-        title: `${pricing_package || "Package not specified"}`,
-        body: `Starting ${uaeDate(class_start_date) || "date not given"}${preferred_time ? `, ${preferred_time}` : ""}.`,
-      })}
-      ${spacer()}
-      ${detailTable(rows)}
-      ${spacer(10)}
-    `,
-    footerNote: adminFooterNote(submittedAt),
+  // Its own branded template (utils/emails/studentRegistrationAdmin.ts), not
+  // the shared notification layout.
+  const html = studentRegistrationAdminEmail({
+    studentName: name,
+    email,
+    phone: phone_number,
+    gender: titleCase(gender),
+    city: city || "",
+    grade: class_grade,
+    school: school_name,
+    curriculum,
+    classType: titleCase(class_type),
+    packageName: pricing_package || "",
+    startDate: uaeDate(class_start_date),
+    preferredTime: preferred_time || "",
+    preferredDays: preferred_days?.join(", ") || "",
   });
 
-  return await sendEmailToAdmin({ subject, htmlContent: html });
+  // Reply goes straight to the person who filled in the form.
+  return await sendEmailToAdmin({ subject, htmlContent: html, replyTo: email ? { email, name } : undefined });
 };
 
-export const sendTrialEmailToAdmin = async ({
-  classStartDate,
-  classStartTime,
-  email,
-  firstName,
-  lastName,
-  grade,
-  howFindUs,
-  howManyJoin,
-  phoneNumber,
-  preferredTeacher,
-  gender,
-  city,
-}: TrialRegFormTypes) => {
+export const sendTrialEmailToAdmin = async (
+  {
+    classStartDate,
+    classStartTime,
+    email,
+    firstName,
+    lastName,
+    grade,
+    howFindUs,
+    howManyJoin,
+    phoneNumber,
+    preferredTeacher,
+    gender,
+    city,
+  }: TrialRegFormTypes,
+  /** Browser + IP details captured with the submission (buildClientInfo). */
+  clientInfo?: TrialClientInfo
+) => {
   const name = fullName(firstName, lastName);
-  const subject = `Trial request: ${name}`;
-  const submittedAt = uaeNow();
-  const when = uaeDate(classStartDate);
+  const subject = "Trial request: " + name;
 
-  const rows: DetailRow[] = [
-    { label: "Name", value: name },
-    { label: "Email", value: mailLink(email) },
-    { label: "Phone", value: telLink(phoneNumber) },
-    { label: "Gender", value: titleCase(gender) },
-    { label: "City", value: city },
-    { label: "Grade", value: grade },
-    { label: "Students joining", value: howManyJoin },
-    { label: "Preferred teacher", value: titleCase(preferredTeacher) },
-    { label: "Found us via", value: howFindUs },
-  ];
-
-  const html = emailLayout({
-    preheader: `${name} · Grade ${grade} · ${when || "no date"} ${classStartTime || ""}`.trim(),
-    eyebrow: "New trial request",
-    title: name,
-    accent: "orange",
-    content: `
-      ${callout({
-        tone: "orange",
-        title: `${when || "Date not given"}${classStartTime ? ` at ${classStartTime}` : ""}`,
-        body: "Requested trial slot, UAE time (GMT+4).",
-      })}
-      ${spacer()}
-      ${detailTable(rows)}
-      ${spacer(6)}
-      ${button({ label: "Reply to parent", url: `mailto:${email}` })}
-      ${spacer(10)}
-    `,
-    footerNote: adminFooterNote(submittedAt),
+  // Branded template (utils/emails/trialRequestAdmin.ts).
+  const html = trialRequestAdminEmail({
+    name,
+    email,
+    phone: phoneNumber,
+    gender: titleCase(gender),
+    city: city || "",
+    grade,
+    studentsJoining: String(howManyJoin ?? ""),
+    preferredTeacher: titleCase(preferredTeacher),
+    foundUsVia: howFindUs,
+    classStartDate,
+    classStartTime,
+    clientInfo,
   });
 
-  return await sendEmailToAdmin({ subject, htmlContent: html });
+  // Reply goes straight to the person who filled in the form.
+  return await sendEmailToAdmin({ subject, htmlContent: html, replyTo: email ? { email, name } : undefined });
 };
 
 export const sendTeacherRegToAdmin = async ({
@@ -354,63 +276,36 @@ export const sendTeacherRegToAdmin = async ({
 }: TeacherRegistrationTypes) => {
   const name = fullName(first_name, last_name);
   const subject = `Teacher application: ${name}`;
-  const submittedAt = uaeNow();
 
-  // Split into two tables so twenty-three fields do not arrive as one slab.
-  const contactRows: DetailRow[] = [
-    { label: "Applicant", value: name },
-    { label: "Email", value: mailLink(email) },
-    { label: "WhatsApp", value: telLink(whatsapp_number) },
-    { label: "Facebook", value: fb_id },
-    { label: "Date of birth", value: birth },
-    { label: "Gender", value: titleCase(gender) },
-    { label: "Nationality", value: nationality },
-    { label: "Lives in", value: where_live },
-    { label: "Address", value: address },
-  ];
-
-  const professionalRows: DetailRow[] = [
-    { label: "Occupation", value: occupation },
-    { label: "Education", value: education },
-    { label: "Teaching experience", value: teaching_experience },
-    { label: "Mother language", value: mother_lang },
-    { label: "Other languages", value: other_langs?.join(", ") },
-    { label: "Has materials", value: materials_status },
-    { label: "Employment desired", value: employment_desire },
-    { label: "Expected salary", value: expected_salary },
-    { label: "Available hours", value: work_hours },
-    { label: "Interview time", value: preferred_interview_time },
-    { label: "Found us via", value: how_find_us },
-    { label: "Declaration", value: declaration },
-  ];
-
-  // nl2br, because these are the two free-text boxes on the form. Without it a
-  // paragraphed answer arrives as one unbroken block.
-  const freeTextRows: DetailRow[] = [
-    { label: "Why they are an ideal candidate", value: nl2br(what_make_ideal), wide: true },
-    { label: "Introduction", value: nl2br(introduce_yourself), wide: true },
-  ];
-
-  const html = emailLayout({
-    preheader: `${name} · ${nationality || "nationality not given"} · ${teaching_experience || "experience not given"}`,
-    eyebrow: "New teacher application",
-    title: name,
-    accent: "blue",
-    content: `
-      ${heading("Contact & personal")}
-      ${detailTable(contactRows)}
-      ${spacer()}
-      ${heading("Professional")}
-      ${detailTable(professionalRows)}
-      ${spacer()}
-      ${heading("In their own words")}
-      ${detailTable(freeTextRows)}
-      ${spacer(6)}
-      ${button({ label: "Reply to applicant", url: `mailto:${email}` })}
-      ${spacer(10)}
-    `,
-    footerNote: adminFooterNote(submittedAt),
+  // Branded template (utils/emails/teacherApplicationAdmin.ts).
+  const html = teacherApplicationAdminEmail({
+    applicantName: name,
+    email,
+    whatsapp: whatsapp_number || "",
+    facebook: fb_id || "",
+    birth,
+    gender: titleCase(gender),
+    // The form field is misnamed: it holds marital status (Married / Unmarried).
+    maritalStatus: materials_status,
+    nationality,
+    livesIn: where_live,
+    address,
+    occupation,
+    education,
+    teachingExperience: teaching_experience,
+    motherLanguage: mother_lang,
+    otherLanguages: Array.isArray(other_langs) ? other_langs.join(", ") : String(other_langs ?? ""),
+    employmentDesired: employment_desire,
+    expectedSalary: String(expected_salary ?? ""),
+    availableHours: String(work_hours ?? ""),
+    interviewTime: preferred_interview_time,
+    foundUsVia: how_find_us,
+    declaration,
+    whyIdeal: what_make_ideal,
+    introduction: introduce_yourself,
+    submittedAt: uaeNow(),
   });
 
-  return await sendEmailToAdmin({ subject, htmlContent: html });
+  // Reply goes straight to the person who filled in the form.
+  return await sendEmailToAdmin({ subject, htmlContent: html, replyTo: email ? { email, name } : undefined });
 };

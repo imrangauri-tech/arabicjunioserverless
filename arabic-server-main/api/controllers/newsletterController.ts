@@ -1,39 +1,192 @@
 import { Request, Response } from "express";
-import Newsletter from "../models/newsletter";
+import Newsletter, { NewsletterAction } from "../models/newsletter";
 import { sendEmailToAdmin } from "../utils/sendEmailToAdmin";
-import { emailLayout, detailTable, spacer, mailLink } from "../utils/emailTemplate";
+import { sendEmail } from "../utils/email";
+import { newsletterSubscriptionAdminEmail } from "../utils/emails/newsletterSubscriptionAdmin";
+import { escapeRegex } from "../utils/escapeRegex";
+import { newsletterWelcomeEmail } from "../utils/emails/newsletterWelcome";
+import { isValidNewsletterToken, unsubscribeUrl } from "../utils/newsletterToken";
+import { esc } from "../utils/emails/brandedEmail";
+
+/**
+ * Where this API is reachable from the outside, for links inside emails.
+ * Behind Render's proxy `trust proxy` is set, so req.protocol is https.
+ */
+const publicApiBase = (req: Request) =>
+    process.env.PUBLIC_API_URL || `${req.protocol}://${req.get("host")}`;
+
+const findByEmail = (email: string) =>
+    Newsletter.findOne({ email: new RegExp(`^${escapeRegex(email)}$`, "i") });
+
+/** Sends the welcome email; a failure is logged, never shown to the visitor. */
+const sendWelcome = async (req: Request, email: string) => {
+    try {
+        await sendEmail({
+            toEmail: email,
+            toName: "",
+            subject: "Welcome to Arabic Juniors",
+            htmlContent: newsletterWelcomeEmail({
+                unsubscribeUrl: unsubscribeUrl(publicApiBase(req), email),
+            }),
+        });
+    } catch (err) {
+        console.error("Newsletter welcome email failed (non-blocking):", err);
+    }
+};
+
+const notifyAdmin = async (email: string, resubscribed: boolean) => {
+    try {
+        await sendEmailToAdmin({
+            subject: resubscribed
+                ? `Newsletter re-subscription: ${email}`
+                : `New newsletter subscription: ${email}`,
+            htmlContent: newsletterSubscriptionAdminEmail({ email, resubscribed }),
+            replyTo: { email },
+        });
+    } catch (err) {
+        console.error("Newsletter admin notification failed (non-blocking):", err);
+    }
+};
 
 // Subscribe to newsletter
-export const subscribeNewsletter = async (req: Request, res: Response) => {
+export const subscribeNewsletter = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { email } = req.body;
+        const email = String(req.body?.email ?? "").trim().toLowerCase();
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+            return res.status(400).json({ message: "Please enter a valid email address" });
+        }
 
-        // Save to DB
-        const newSubscriber = new Newsletter({ email });
-        await newSubscriber.save();
+        const existing = await findByEmail(email);
 
-        const htmlContent = emailLayout({
-            preheader: `${email} subscribed to the Arabic Juniors newsletter.`,
-            eyebrow: "New newsletter subscription",
-            title: "Someone subscribed",
-            accent: "green",
-            content: `
-              ${detailTable([{ label: "Email", value: mailLink(email) }])}
-              ${spacer(10)}
-            `,
-            footerNote: "Subscribed through the newsletter form on arabicjuniors.com.",
-        });
+        // Already on the list: say so instead of the duplicate-key error that
+        // used to surface as "Failed to subscribe".
+        if (existing && existing.action_taken !== NewsletterAction.UNSUBSCRIBED) {
+            return res.status(200).json({ message: "You're already subscribed to our newsletter!" });
+        }
 
-        // Send email to admin
-        await sendEmailToAdmin({
-            subject: "New Newsletter Subscription",
-            htmlContent,
-        });
+        if (existing) {
+            existing.action_taken = NewsletterAction.SUBSCRIBED;
+            existing.action_date = new Date();
+            await existing.save();
+        } else {
+            await Newsletter.create({ email });
+        }
+
+        // The subscription is saved; email trouble must not turn it into an error.
+        await sendWelcome(req, email);
+        await notifyAdmin(email, Boolean(existing));
 
         res.status(201).json({ message: "Subscribed to newsletter successfully!" });
     } catch (error: any) {
         console.error("Newsletter Subscribe Error:", error);
         res.status(500).json({ message: "Failed to subscribe" });
+    }
+};
+
+/** A small branded page for the unsubscribe flow (this is a page, not an email). */
+const unsubscribePage = (heading: string, message: string, formHtml = ""): string => `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>${esc(heading)} — Arabic Juniors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F5F6F8;font-family:'Inter',Helvetica,sans-serif;color:#434343;padding:16px;box-sizing:border-box}
+.card{background:#fff;max-width:440px;width:100%;border-radius:22px;overflow:hidden;box-shadow:0 8px 35px rgba(24,29,36,.07);text-align:center}
+.bar{height:5px;background:#FB6238}
+.inner{padding:32px 28px}
+img{width:140px;height:auto;margin:0 auto 22px;display:block}
+h1{font-size:24px;line-height:32px;font-weight:800;margin:0 0 10px}
+p{font-size:14px;line-height:23px;color:#5F6875;margin:0 0 22px}
+button,a.btn{display:inline-block;border:0;cursor:pointer;background:#FB6238;color:#fff;font:700 14px 'Inter',Helvetica,sans-serif;padding:12px 22px;border-radius:10px;text-decoration:none}
+a.link{display:block;margin-top:14px;font-size:13px;color:#848D9B;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card"><div class="bar"></div><div class="inner">
+<img src="https://arabicjuniors.com/_next/image?url=%2Farabic-logo-new.png&amp;w=384&amp;q=75" alt="Arabic Juniors">
+<h1>${esc(heading)}</h1>
+<p>${message}</p>
+${formHtml}
+<a class="link" href="https://arabicjuniors.com">Back to ArabicJuniors.com</a>
+</div></div>
+</body>
+</html>`;
+
+/**
+ * helmet's default policy blocks images from other origins, which hid the logo.
+ * These pages get their own tight policy: no scripts at all, the logo and
+ * Google Fonts allowed, and the form may only post back to this API.
+ */
+const sendPage = (res: Response, status: number, html: string) => {
+    res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'none'; img-src https: data:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+    );
+    res.status(status).type("html").send(html);
+};
+
+const readUnsubscribeParams = (req: Request) => ({
+    email: String((req.query.e ?? req.body?.e) || "").trim().toLowerCase(),
+    token: String((req.query.t ?? req.body?.t) || ""),
+});
+
+/**
+ * GET: shows a confirmation button rather than unsubscribing straight away.
+ * Mail security scanners open every link in an email; a GET that acted on
+ * its own would unsubscribe people who never clicked anything.
+ */
+export const showUnsubscribe = async (req: Request, res: Response) => {
+    const { email, token } = readUnsubscribeParams(req);
+    if (!isValidNewsletterToken(email, token)) {
+        sendPage(res, 400, unsubscribePage("Link not valid", "This unsubscribe link is incomplete or has been changed. Please use the link from your email."));
+        return;
+    }
+
+    sendPage(
+        res,
+        200,
+        unsubscribePage(
+            "Unsubscribe from our newsletter?",
+            `<strong>${esc(email)}</strong> will no longer receive the Arabic Juniors newsletter.`,
+            `<form method="POST" action="unsubscribe">
+<input type="hidden" name="e" value="${esc(email)}">
+<input type="hidden" name="t" value="${esc(token)}">
+<button type="submit">Yes, unsubscribe me</button>
+</form>`
+        )
+    );
+};
+
+/** POST: performs the unsubscribe. */
+export const confirmUnsubscribe = async (req: Request, res: Response) => {
+    const { email, token } = readUnsubscribeParams(req);
+    if (!isValidNewsletterToken(email, token)) {
+        sendPage(res, 400, unsubscribePage("Link not valid", "This unsubscribe link is incomplete or has been changed. Please use the link from your email."));
+        return;
+    }
+
+    try {
+        const subscriber = await findByEmail(email);
+        if (subscriber && subscriber.action_taken !== NewsletterAction.UNSUBSCRIBED) {
+            subscriber.action_taken = NewsletterAction.UNSUBSCRIBED;
+            subscriber.action_date = new Date();
+            await subscriber.save();
+        }
+        sendPage(
+            res,
+            200,
+            unsubscribePage(
+                "You've been unsubscribed",
+                "You won't receive the Arabic Juniors newsletter any more. You can subscribe again anytime from our website."
+            )
+        );
+    } catch (error) {
+        console.error("Newsletter unsubscribe error:", error);
+        sendPage(res, 500, unsubscribePage("Something went wrong", "Please try again in a moment."));
     }
 };
 

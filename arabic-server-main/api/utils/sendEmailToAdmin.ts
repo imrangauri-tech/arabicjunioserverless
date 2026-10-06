@@ -4,6 +4,8 @@ import { deliver, Recipient } from "./mailer";
 interface SendEmailToAdminParams {
   subject: string;
   htmlContent: string;
+  /** The visitor who filled in the form, so the admin can just hit Reply. */
+  replyTo?: Recipient;
 }
 
 /**
@@ -30,6 +32,7 @@ const parseList = (raw: string | undefined, fallback: string): Recipient[] =>
 export const sendEmailToAdmin = async ({
   subject,
   htmlContent,
+  replyTo,
 }: SendEmailToAdminParams): Promise<brevo.CreateSmtpEmail> =>
   deliver({
     senderName: "Arabic Juniors Notifications",
@@ -37,4 +40,5 @@ export const sendEmailToAdmin = async ({
     bcc: parseList(process.env.ADMIN_NOTIFY_BCC, DEFAULT_BCC),
     subject,
     htmlContent,
+    replyTo,
   });
