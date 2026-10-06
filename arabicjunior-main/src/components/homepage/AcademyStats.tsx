@@ -57,8 +57,8 @@ const AcademyStats = () => {
         if (res.ok && result.data) {
           setData(result.data);
         }
-      } catch (e) {
-        console.error("Failed to fetch academy stats", e);
+      } catch {
+        // API unreachable: the built-in copy below is shown instead
       } finally {
         setLoading(false);
       }

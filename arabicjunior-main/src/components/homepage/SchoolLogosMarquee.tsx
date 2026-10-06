@@ -32,8 +32,8 @@ const SchoolLogosMarquee = () => {
         if (res.ok && result.data && result.data.length > 0) {
           setLogos(result.data);
         }
-      } catch (err) {
-        console.error("Failed to load school logos:", err);
+      } catch {
+        // API unreachable: the marquee simply renders empty
       } finally {
         setLoading(false);
       }

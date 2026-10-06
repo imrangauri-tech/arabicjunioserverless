@@ -13,9 +13,15 @@ const BlogSection = () => {
   // const latestBlogs = getRandomBlogs();
 
   async function fetchLatestBlogs(limit = 4) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/blogs`, { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = await res.json();
+    let data;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/blogs`, { cache: "no-store" });
+      if (!res.ok) return;
+      data = await res.json();
+    } catch {
+      // API unreachable: the section renders without posts instead of crashing
+      return;
+    }
     const blogs = data.data || [];
 
     // Shuffle the array

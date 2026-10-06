@@ -13,7 +13,8 @@
     "seed-pricing": "ts-node --transpile-only scripts/seed-pricing.ts",
     "clean": "pnpm -r exec rm -rf node_modules && pnpm store prune",
     "email:check": "ts-node --transpile-only scripts/check-email.ts",
-    "email:preview": "ts-node --transpile-only scripts/preview-emails.ts"
+    "email:preview": "ts-node --transpile-only scripts/preview-emails.ts",
+    "seed-teacher-profiles": "ts-node --transpile-only scripts/seed-teacher-profiles.ts"
   },
   "keywords": [],
   "author": "",

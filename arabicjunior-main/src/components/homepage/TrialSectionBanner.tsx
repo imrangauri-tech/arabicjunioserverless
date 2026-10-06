@@ -55,8 +55,8 @@ const TrialSectionBanner = () => {
         if (res.ok && result.data) {
           setSettings(result.data);
         }
-      } catch (err) {
-        console.error("Error loading homepage trial settings:", err);
+      } catch {
+        // API unreachable: the built-in copy below is shown instead
       }
     };
     fetchSettings();
