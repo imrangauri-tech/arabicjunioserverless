@@ -48,9 +48,6 @@ const TeachersPage = async () => {
     fetchSettings<TeachersPageContent>("/teachers-page"),
   ]);
 
-  const heading = pageContent?.heading || "Meet our dynamic team or tutors";
-  const introLines = pageContent?.introLines ?? [];
-
   // Each new section renders nothing when its list is empty, so an API outage
   // or an admin clearing a section leaves the page shorter rather than broken.
   const highlights = pageContent?.highlights ?? [];
@@ -120,6 +117,24 @@ const TeachersPage = async () => {
         </div>
       </section>
 
+      {/* The tutors come straight after the hero: parents land here to pick a
+          teacher, so the grid is the first thing under the fold. */}
+      {teachers.length > 0 && (
+        <section
+          aria-label="all-teachers-section"
+          className="bg-[#F3F7F4] py-16 sm:py-20"
+        >
+          <div className="container">
+            <div
+              aria-describedby="teacher-card-wrapper"
+              className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              <TeacherCard teachersData={teachers} />
+            </div>
+          </div>
+        </section>
+      )}
+
       <TeacherHighlights highlights={highlights} />
 
       <WhyChooseTeachers
@@ -135,52 +150,6 @@ const TeachersPage = async () => {
         subheading={pageContent?.methodologySubheading || ""}
         steps={methodologySteps}
       />
-
-      {teachers.length > 0 && (
-        <section
-          aria-describedby="all-teachers-section"
-          className="bg-[#F3F7F4] py-20"
-        >
-          <div className="container">
-            <div aria-describedby="main-wrapper">
-              <Reveal
-                variant="up"
-                aria-describedby="title-wrapper"
-                className="mb-6 flex items-center justify-center"
-              >
-                <h3 className=" text-neutral-800 text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl lg:font-bold text-center">
-                  {heading}
-                </h3>
-              </Reveal>
-
-              {introLines.length > 0 && (
-                <Reveal
-                  variant="up"
-                  delay={100}
-                  aria-describedby="teachers-intro"
-                  className="mx-auto mb-12 flex max-w-3xl flex-col gap-y-3"
-                >
-                  {introLines.map((line, index) => (
-                    <p
-                      key={index}
-                      className="text-neutral-700 text-base sm:text-lg font-normal leading-relaxed text-center"
-                    >
-                      {line}
-                    </p>
-                  ))}
-                </Reveal>
-              )}
-
-              <div
-                aria-describedby="teacher-card-wrapper"
-                className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-              >
-                <TeacherCard teachersData={teachers} />
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {pageContent?.ctaEnabled !== false && (
         <TeachersCta

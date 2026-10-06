@@ -2,7 +2,10 @@ import { Request, Response } from "express";
 import TrialLanding, { TrialLandingDocument } from "../models/trialLanding";
 import { uploadBuffer, destroyQuietly, UploadedAsset } from "../utils/cloudinaryUpload";
 
-const DEFAULT_SLUG = "trial-landing";
+/** The default landing page's URL: /trial-benefits. */
+export const DEFAULT_SLUG = "trial-benefits";
+/** Its previous URL. The frontend 301-redirects it; the record is renamed once. */
+const LEGACY_DEFAULT_SLUG = "trial-landing";
 const DEFAULT_HERO_IMAGE = "/hero-arabic-kid.jpg";
 
 /** The editable sections, each stored as one nested object. */
@@ -27,7 +30,7 @@ const slugify = (text: string) =>
 
 /** "abu-dhabi" → "Abu Dhabi"; the default page is the Dubai page. */
 export const cityFromSlug = (slug: string) =>
-  !slug || slug === DEFAULT_SLUG || slug === "landing"
+  !slug || slug === DEFAULT_SLUG || slug === LEGACY_DEFAULT_SLUG || slug === "landing"
     ? "Dubai"
     : slug
         .split("-")
@@ -54,21 +57,41 @@ const readPayload = (body: any): Record<string, any> => {
   return body && typeof body === "object" ? body : {};
 };
 
+/**
+ * Makes sure the default page exists at DEFAULT_SLUG.
+ *
+ * When the default URL changed from /trial-landing to /trial-benefits, the
+ * existing record — with everything the admin had written — is renamed rather
+ * than replaced by a blank page. Only a database with neither gets a new one.
+ */
+const ensureDefaultPage = async (): Promise<TrialLandingDocument> => {
+  const current = await TrialLanding.findOne({ slug: DEFAULT_SLUG });
+  if (current) return current;
+
+  const legacy = await TrialLanding.findOneAndUpdate(
+    { slug: LEGACY_DEFAULT_SLUG },
+    { $set: { slug: DEFAULT_SLUG } },
+    { new: true }
+  );
+  if (legacy) return legacy;
+
+  return TrialLanding.create({
+    title: "Free Trial Landing Page",
+    slug: DEFAULT_SLUG,
+    city: cityFromSlug(DEFAULT_SLUG),
+  });
+};
+
 // GET: Fetch trial landing page settings by slug (Public)
 export const getTrialLandingSettings = async (req: Request, res: Response): Promise<any> => {
   try {
     const slugParam = req.params.slug || DEFAULT_SLUG;
 
-    let settings = await TrialLanding.findOne({ slug: slugParam });
-
-    // The default page always exists, so /trial-landing never 404s on a fresh database.
-    if (!settings && slugParam === DEFAULT_SLUG) {
-      settings = await TrialLanding.create({
-        title: "Free Trial Landing Page",
-        slug: DEFAULT_SLUG,
-        city: cityFromSlug(DEFAULT_SLUG),
-      });
-    }
+    // The default page always exists, so /trial-benefits never 404s.
+    const settings =
+      slugParam === DEFAULT_SLUG
+        ? await ensureDefaultPage()
+        : await TrialLanding.findOne({ slug: slugParam });
 
     if (!settings) {
       return res.status(404).json({ success: false, message: "Landing page not found" });
@@ -84,6 +107,9 @@ export const getTrialLandingSettings = async (req: Request, res: Response): Prom
 // GET: List all trial landing pages (Admin Only)
 export const listTrialLandings = async (_req: Request, res: Response): Promise<any> => {
   try {
+    // So the admin list shows the default page under its current URL even
+    // before anyone has visited it.
+    await ensureDefaultPage();
     const list = await TrialLanding.find({}, "_id title slug city createdAt updatedAt").sort({
       createdAt: -1,
     });
@@ -164,7 +190,7 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
     if (typeof payload.slug === "string" && payload.slug.trim()) {
       const targetSlug = slugify(payload.slug);
       if (targetSlug && targetSlug !== settings.slug) {
-        // The default page backs the /trial-landing URL; renaming it would just
+        // The default page backs the /trial-benefits URL; renaming it would just
         // make the public route recreate a fresh copy.
         if (settings.slug === DEFAULT_SLUG) {
           return res
@@ -266,7 +292,7 @@ export const updateTrialLandingSettings = async (req: Request, res: Response): P
 /**
  * POST: Delete several landing pages at once (Admin Only).
  *
- * The default /trial-landing page is skipped rather than deleted, exactly as
+ * The default /trial-benefits page is skipped rather than deleted, exactly as
  * the single delete refuses it. The response says how many were skipped so the
  * count on screen is never a surprise.
  */

@@ -7,18 +7,26 @@ import {
   Send,
   User,
   Mail,
-  Phone,
   MessageCircle,
   Headphones,
   Mic,
   Square,
   Volume2,
   VolumeX,
+  Sparkles,
+  Zap,
+  GraduationCap,
+  Lock,
+  BookOpenText,
 } from "lucide-react";
+import "react-phone-number-input/style.css";
+import PhoneInput, { Country, isValidPhoneNumber } from "react-phone-number-input";
 import { Button } from "./ui/button-2";
 import { Input } from "./ui/input-2";
 import { toast } from "sonner";
 import { useSpeech } from "@/hooks/useSpeech";
+import { useCountryCode } from "@/hooks/useCountry";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 
 interface Message {
   id: string;
@@ -50,6 +58,29 @@ interface ChatbotConfig {
 }
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+/** Used only when /chatbot/config cannot be reached. Mirrors the live settings. */
+const FALLBACK_CONFIG: ChatbotConfig = {
+  enabled: true,
+  botName: "Juniors Support Bot",
+  botTagline: "Instant Arabic Learning & Admissions Advisor",
+  avatarUrl: "",
+  accentFrom: "#FF60A8",
+  accentTo: "#FB6238",
+  preChatTitle: "Start Your Free Consultation",
+  preChatSubtitle: "Enter your details to connect with our Admissions Advisor",
+  askForPhone: true,
+  inputPlaceholder: "Type your message...",
+  quickReplies: [],
+  operatorEnabled: true,
+  operatorLabel: "Talk with Operator",
+  whatsappNumber: "971505344645",
+  whatsappMessage:
+    "Hello! I'm interested in enrolling in Arabic tuition classes. Please get in touch with me",
+  voiceInputEnabled: false,
+  voiceReplyEnabled: false,
+  voiceLanguage: "en-US",
+};
 
 /**
  * Renders the [label](/path) links the bot writes.
@@ -96,6 +127,49 @@ const renderMessageText = (text: string): React.ReactNode => {
   return nodes.length ? nodes : text;
 };
 
+/**
+ * Phone field with a country picker. Its own component so the visitor's
+ * country is only looked up once the form is actually on screen, not on every
+ * page load for every visitor.
+ */
+const ChatPhoneField = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) => {
+  const { countryCode } = useCountryCode();
+  return (
+    <PhoneInput
+      international
+      defaultCountry={(countryCode && countryCode !== "undefined" ? countryCode : "AE") as Country}
+      value={value}
+      onChange={(next) => onChange(next ?? "")}
+      placeholder="50 123 4567"
+      className="chatbot-phone h-11 rounded-xl border border-[#EBE4DC] bg-white pl-3 pr-3 flex items-center gap-2 text-sm text-neutral-800 transition-colors focus-within:border-[#FB6238] focus-within:ring-2 focus-within:ring-[#FB6238]/15"
+    />
+  );
+};
+
+/** One labelled field in the pre-chat form. */
+const Field = ({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <label className="block text-xs font-semibold text-[#0D1B2A]">
+      {label} {required && <span className="text-[#FB6238]">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
 const ChatbotWidget = () => {
   const [config, setConfig] = useState<ChatbotConfig | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -121,20 +195,22 @@ const ChatbotWidget = () => {
     })`,
   };
 
-  // Load the admin's settings. Without them there is nothing to draw, so a
-  // failure here hides the widget rather than showing a half-configured one.
+  // Load the admin's settings. If the API cannot be reached the widget still
+  // appears with built-in defaults: it is now the only WhatsApp shortcut on the
+  // page, so hiding it during an outage would leave visitors no way to reach us.
+  // Only an admin switching the chatbot off hides it.
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
+      let loaded: ChatbotConfig | null = null;
       try {
         const res = await fetch(`${API}/chatbot/config`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled) setConfig(json.data);
+        if (res.ok) loaded = (await res.json())?.data ?? null;
       } catch {
-        // The site works fine without a chat bubble; stay quiet.
+        // Fall through to the defaults below.
       }
+      if (!cancelled) setConfig(loaded ?? FALLBACK_CONFIG);
     })();
 
     return () => {
@@ -235,6 +311,10 @@ const ChatbotWidget = () => {
   const handleStartChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
+    if (config?.askForPhone && !(phone && isValidPhoneNumber(phone))) {
+      toast.error("Please enter a valid WhatsApp / mobile number.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -333,50 +413,77 @@ const ChatbotWidget = () => {
 
   return (
     <React.Fragment>
-      {/* Floating Chat Bubble */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={accent}
-        className="fixed bottom-6 right-24 z-50 w-[60px] h-[60px] rounded-full text-white flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-        aria-label="Toggle chatbot"
-      >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
-      </button>
+      {/* Floating Chat Bubble — hidden while the window is open, whose own X
+          closes it, so there are never two close buttons on screen. */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          style={accent}
+          className="fixed bottom-6 right-6 z-50 w-[60px] h-[60px] rounded-full text-white flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
+          aria-label="Toggle chatbot"
+        >
+          <MessageSquare size={24} />
+        </button>
+      )}
 
-      {/* Chat Window Panel */}
+      {/* Chat Window Panel — opens in the bubble's corner. WhatsApp lives in
+          its header; there is no separate floating WhatsApp button. */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 sm:right-24 z-50 w-[350px] sm:w-[380px] h-[520px] bg-white border border-neutral-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-neutral-800 animate-in fade-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-[400px] h-[min(600px,calc(100vh-8rem))] bg-[#FCF9F6] border border-[#F0EAE3] rounded-[28px] shadow-2xl flex flex-col overflow-hidden text-neutral-800 animate-in fade-in slide-in-from-bottom-5 duration-200">
           {/* Header */}
           <div
             style={accent}
-            className="p-4 text-white flex justify-between items-center shrink-0 shadow-sm"
+            className="px-4 py-3.5 text-white flex justify-between items-center gap-3 shrink-0 shadow-sm"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 overflow-hidden">
-                {config.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={config.avatarUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <MessageCircle size={20} />
-                )}
+              <div className="relative shrink-0">
+                <div className="w-11 h-11 rounded-full bg-white/20 ring-2 ring-white/40 flex items-center justify-center overflow-hidden">
+                  {config.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={config.avatarUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <MessageCircle size={22} />
+                  )}
+                </div>
+                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-white" />
               </div>
               <div className="min-w-0">
-                <h4 className="font-bold text-sm truncate">{config.botName}</h4>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="text-[10px] text-white/90 font-medium truncate">
-                    {config.botTagline}
+                <h4 className="font-extrabold text-[15px] leading-tight truncate">
+                  {config.botName}
+                </h4>
+                {/* The badge shares the tagline's line so the bot's name keeps
+                    the full width next to the header buttons. */}
+                <div className="mt-1 flex items-center gap-1.5 min-w-0">
+                  <span className="shrink-0 rounded-full bg-white/20 border border-white/40 px-1.5 py-px text-[9px] font-extrabold tracking-wider">
+                    24/7 LIVE
                   </span>
+                  <p className="text-[11px] text-white/90 font-medium truncate">
+                    {config.botTagline}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {showSpeaker && isChatStarted && (
+              {config.whatsappNumber && (
+                <a
+                  href={`https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
+                    config.whatsappMessage
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center rounded-full bg-white/95 p-0.5 shadow-sm transition-transform hover:scale-110"
+                  aria-label="Chat with us on WhatsApp"
+                  title="Chat with us on WhatsApp"
+                >
+                  <WhatsAppIcon size={26} />
+                </a>
+              )}
+              {showSpeaker && (
                 <button
                   onClick={toggleVoiceReplies}
                   className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
@@ -392,77 +499,106 @@ const ChatbotWidget = () => {
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-full hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                 aria-label="Close chat"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
           </div>
 
           {/* Body Content */}
-          <div className="flex-1 overflow-y-auto p-4 bg-neutral-50 flex flex-col">
+          <div
+            className={`flex-1 overflow-y-auto flex flex-col ${
+              isChatStarted ? "p-4 bg-neutral-50" : "p-4 sm:p-5"
+            }`}
+          >
             {!isChatStarted ? (
               // Pre-chat Form
-              <form onSubmit={handleStartChat} className="my-auto space-y-4 p-2">
-                <div className="text-center space-y-1 mb-2">
-                  <h5 className="font-bold text-lg text-neutral-800">
-                    {config.preChatTitle}
-                  </h5>
-                  <p className="text-xs text-neutral-500">{config.preChatSubtitle}</p>
+              <form onSubmit={handleStartChat} className="space-y-4">
+                {/* Consultation card */}
+                <div className="relative overflow-hidden rounded-2xl border border-[#FFE2D2] bg-gradient-to-br from-[#FFF6EE] via-white to-[#FFEADC] p-4 shadow-sm">
+                  <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#FB6238]/10" />
+                  <div className="relative flex items-center gap-3">
+                    <div
+                      style={accent}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md"
+                    >
+                      <BookOpenText size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <h5 className="font-extrabold text-[15px] leading-snug text-[#0D1B2A]">
+                        {config.preChatTitle}
+                      </h5>
+                      <p className="text-[11.5px] leading-snug text-[#4A5568] mt-0.5">
+                        {config.preChatSubtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative mt-3.5 flex items-center justify-between gap-1 border-t border-[#FFE2D2] pt-3 text-[10px] sm:text-[10.5px] font-bold text-[#0D1B2A] whitespace-nowrap">
+                    <span className="flex items-center gap-1">
+                      <Zap size={12} className="text-[#FB6238] fill-[#FB6238]" /> Instant Reply
+                    </span>
+                    <span className="h-1 w-1 shrink-0 rounded-full bg-[#FFD0BD]" />
+                    <span className="flex items-center gap-1">
+                      <GraduationCap size={13} className="text-[#FB6238]" /> Free Guidance
+                    </span>
+                    <span className="h-1 w-1 shrink-0 rounded-full bg-[#FFD0BD]" />
+                    <span className="flex items-center gap-1">
+                      <Lock size={11} className="text-[#FB6238]" /> 100% Private
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-600 flex items-center gap-1.5">
-                    <User size={13} /> Full Name
-                  </label>
-                  <Input
-                    required
-                    type="text"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-10 text-sm border-neutral-200 focus-within:border-orange-400 bg-white text-black"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-600 flex items-center gap-1.5">
-                    <Mail size={13} /> Email Address
-                  </label>
-                  <Input
-                    required
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-10 text-sm border-neutral-200 focus-within:border-orange-400 bg-white text-black"
-                  />
-                </div>
-
-                {config.askForPhone && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-600 flex items-center gap-1.5">
-                      <Phone size={13} /> Phone Number
-                    </label>
+                <Field label="Full Name" required>
+                  <div className="relative">
+                    <User size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                     <Input
-                      type="tel"
-                      placeholder="+971 50 000 0000"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="h-10 text-sm border-neutral-200 focus-within:border-orange-400 bg-white text-black"
+                      required
+                      type="text"
+                      autoComplete="name"
+                      placeholder="e.g. Fatima Khan"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-11 rounded-xl pl-10 text-sm border-[#EBE4DC] bg-white text-black focus-within:border-[#FB6238]"
                     />
                   </div>
+                </Field>
+
+                <Field label="Email Address" required>
+                  <div className="relative">
+                    <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <Input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      placeholder="e.g. fatima@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-11 rounded-xl pl-10 text-sm border-[#EBE4DC] bg-white text-black focus-within:border-[#FB6238]"
+                    />
+                  </div>
+                </Field>
+
+                {config.askForPhone && (
+                  <Field label="WhatsApp / Mobile Number" required>
+                    <ChatPhoneField value={phone} onChange={setPhone} />
+                  </Field>
                 )}
 
                 <Button
                   type="submit"
                   disabled={loading}
                   style={accent}
-                  className="w-full h-10 mt-2 text-white font-semibold shadow-md"
+                  className="w-full h-12 rounded-xl text-white font-bold shadow-lg transition-transform hover:scale-[1.01] flex items-center justify-center gap-2"
                 >
-                  {loading ? "Initializing..." : "Start Chat"}
+                  {loading ? "Starting…" : "Start Consultation"}
+                  {!loading && <Sparkles size={16} />}
                 </Button>
+
+                <p className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-500">
+                  <Lock size={11} /> Safe, confidential &amp; no spam guarantee
+                </p>
               </form>
             ) : (
               // Active Conversation

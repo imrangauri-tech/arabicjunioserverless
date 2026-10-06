@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import Link from "next/link";
+import TeacherAvatar from "@/components/TeacherAvatar";
 import type { Teacher } from "@/types/Teacher";
 import Reveal from "@/components/Reveal";
 
@@ -28,14 +28,13 @@ const TeacherCard: React.FC<TeacherCardProps> = ({ teachersData }) => {
         >
           <div
             aria-describedby="image-wrapper"
-            className="max-w-44 w-full rounded-full"
+            className="max-w-44 w-full"
           >
-            <Image
+            <TeacherAvatar
               src={teacher.image}
-              width={256}
-              height={256}
+              index={cardIndex}
+              sizes="176px"
               alt={`${teacher.name} — Arabic Juniors teacher`}
-              className="w-full rounded-full object-cover aspect-square"
             />
           </div>
 

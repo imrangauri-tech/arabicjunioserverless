@@ -21,7 +21,7 @@ const TeachersSlider = async () => {
       >
         <div className="container">
           <div aria-label="teachers-slider-wrapper">
-            <Reveal as="h3" variant="up" className="text-white text-4xl leading-tight sm:text-6xl sm:leading-tight font-bold text-center mb-14">
+            <Reveal as="h3" variant="up" className="text-white text-4xl leading-tight sm:text-5xl sm:leading-tight font-bold text-center mb-14">
               UAE Experienced Teachers
             </Reveal>
 

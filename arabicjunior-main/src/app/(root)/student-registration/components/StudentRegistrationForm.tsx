@@ -38,6 +38,9 @@ import useTurnstile from "@/hooks/useTurnstile";
 import { useCountryCode } from "@/hooks/useCountry";
 import { Checkbox } from "@/components/ui/checkbox";
 import { addDays } from "date-fns";
+import RegistrationSuccessDialog, {
+  type RegistrationSummary,
+} from "./RegistrationSuccessDialog";
 
 const TIME_SLOTS = {
   timeFormat: "12-hour",
@@ -200,6 +203,7 @@ const StudentRegistrationForm = () => {
   const { countryCode } = useCountryCode();
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [success, setSuccess] = React.useState<RegistrationSummary | null>(null);
   const [classType, setClassType] = React.useState<ClassType>("individual");
   const { next, prev, total, current, hasNext, hasPrev, isLast } = useSteps();
   const captcha = useTurnstile();
@@ -293,9 +297,14 @@ const StudentRegistrationForm = () => {
         throw new Error(res.statusText);
       }
 
-      toast.success(data?.message);
+      // The confirmation popup replaces the old toast-and-redirect; closing it
+      // takes the visitor home.
+      setSuccess({
+        firstName: values.first_name.trim(),
+        startDate: format(date, "EEE, d MMM yyyy"),
+        time: values.preferred_time,
+      });
       setIsLoading(false);
-      router.push("/");
     } catch (error) {
       console.error(error);
       setIsLoading(false);
@@ -789,6 +798,12 @@ const StudentRegistrationForm = () => {
           </form>
         </Form>
       </React.Suspense>
+
+      <RegistrationSuccessDialog
+        open={success !== null}
+        summary={success}
+        onClose={() => router.push("/")}
+      />
     </React.Fragment>
   );
 };

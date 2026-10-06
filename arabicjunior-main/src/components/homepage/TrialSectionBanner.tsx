@@ -89,7 +89,7 @@ const TrialSectionBanner = () => {
               
               {/* Orange Badge */}
               <Reveal variant="up" delay={50}>
-                <div className="inline-flex items-center gap-1.5 bg-[#FF4500] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">
+                <div className="inline-flex items-center gap-1.5 bg-orange-500 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">
                   <Gift size={14} />
                   {badgeText}
                 </div>
@@ -103,7 +103,7 @@ const TrialSectionBanner = () => {
                     <span className="relative inline-block text-[#FB6238]">
                       {headingHighlight}
                       {/* SVG Wavy Underline */}
-                      <span className="absolute -bottom-2 left-0 w-full text-[#FBBF24]">
+                      <span className="absolute -bottom-2 left-0 w-full text-yellow-500">
                         <svg className="w-full h-2.5" viewBox="0 0 100 10" preserveAspectRatio="none" fill="none">
                           <path 
                             d="M0,5 Q12.5,0 25,5 T50,5 T75,5 T100,5" 
@@ -154,12 +154,12 @@ const TrialSectionBanner = () => {
               <Reveal variant="up" delay={250}>
                 <div className="flex flex-col sm:flex-row gap-3 pt-6">
                   <Link href="/register">
-                    <Button className="w-full sm:w-auto h-13 px-8 bg-[#FB6238] hover:bg-[#E04E26] text-white font-bold text-base rounded-xl flex items-center justify-center gap-2 shadow-md transition-all">
+                    <Button className="w-full sm:w-auto h-13 px-8 bg-[#FB6238] hover:bg-orange-600 text-white font-bold text-base rounded-xl flex items-center justify-center gap-2 shadow-md transition-all">
                       {btnBookText}
                       <ArrowRight size={17} />
                     </Button>
                   </Link>
-                  <Link href="/trial-landing">
+                  <Link href="/trial-benefits">
                     <Button variant="outline" className="w-full sm:w-auto h-13 px-7 border-2 border-[#FB6238] text-[#FB6238] hover:bg-[#FFF5F1] font-bold text-base rounded-xl flex items-center justify-center gap-2 transition-all">
                       {btnDetailsText}
                     </Button>

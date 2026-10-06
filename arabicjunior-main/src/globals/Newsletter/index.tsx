@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 const Newsletter = () => {
   const pathname = usePathname();
   const isLandingPage =
-    pathname?.includes("trial-landing") ||
+    pathname?.includes("trial-benefits") ||
     (pathname &&
       pathname !== "/" &&
       ![

@@ -8,6 +8,7 @@ import MediaPicker from "@/components/admin/MediaPicker";
 import { revalidateContent } from "@/lib/revalidateContent";
 import type { TrialLandingPage } from "@/types/TrialLanding";
 import { LANDING_SECTIONS, SEO_FIELDS } from "./landingFields";
+import { DEFAULT_LANDING_SLUG } from "@/lib/landing";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -138,7 +139,7 @@ export default function LandingEditor({
     );
   }
 
-  const isDefault = page.slug === "trial-landing";
+  const isDefault = page.slug === DEFAULT_LANDING_SLUG;
   const section = LANDING_SECTIONS.find((s) => s.key === tab);
 
   return (
@@ -218,7 +219,7 @@ export default function LandingEditor({
               />
               <span className="mt-1 block text-xs text-neutral-500">
                 {isDefault
-                  ? "The default page always lives at /trial-landing."
+                  ? `The default page always lives at /${DEFAULT_LANDING_SLUG}.`
                   : "Changing this changes the page's address; old links will stop working."}
               </span>
             </label>

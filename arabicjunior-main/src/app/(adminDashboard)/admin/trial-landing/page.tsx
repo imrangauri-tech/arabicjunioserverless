@@ -20,6 +20,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import LandingEditor from "./LandingEditor";
+import { DEFAULT_LANDING_SLUG } from "@/lib/landing";
 
 type LandingPageListItem = {
   _id: string;
@@ -131,7 +132,7 @@ export default function TrialLandingAdminPage() {
    * on its row is disabled. Excluding it here means a select-all can never put
    * the admin in front of a confirmation that will silently skip a row.
    */
-  const deletablePages = pagesList.filter((page) => page.slug !== "trial-landing");
+  const deletablePages = pagesList.filter((page) => page.slug !== DEFAULT_LANDING_SLUG);
 
   const toggleOne = (id: string) =>
     setSelectedIds((prev) =>
@@ -178,8 +179,8 @@ export default function TrialLandingAdminPage() {
   };
 
   const handleDeletePage = async (id: string, slugName: string) => {
-    const defaultCount = pagesList.filter((p) => p.slug === "trial-landing").length;
-    if (slugName === "trial-landing" && defaultCount <= 1) {
+    const defaultCount = pagesList.filter((p) => p.slug === DEFAULT_LANDING_SLUG).length;
+    if (slugName === DEFAULT_LANDING_SLUG && defaultCount <= 1) {
       toast.error("Default trial landing page cannot be deleted");
       return;
     }
@@ -363,14 +364,14 @@ export default function TrialLandingAdminPage() {
                           type="checkbox"
                           checked={selectedIds.includes(page._id)}
                           onChange={() => toggleOne(page._id)}
-                          disabled={page.slug === "trial-landing"}
+                          disabled={page.slug === DEFAULT_LANDING_SLUG}
                           aria-label={
-                            page.slug === "trial-landing"
+                            page.slug === DEFAULT_LANDING_SLUG
                               ? "The default landing page cannot be deleted"
                               : `Select ${page.title}`
                           }
                           title={
-                            page.slug === "trial-landing"
+                            page.slug === DEFAULT_LANDING_SLUG
                               ? "The default landing page cannot be deleted"
                               : undefined
                           }
@@ -421,10 +422,10 @@ export default function TrialLandingAdminPage() {
                           Edit Content
                         </button>
                         <button
-                          disabled={page.slug === "trial-landing"}
+                          disabled={page.slug === DEFAULT_LANDING_SLUG}
                           onClick={() => handleDeletePage(page._id, page.slug)}
                           className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            page.slug === "trial-landing"
+                            page.slug === DEFAULT_LANDING_SLUG
                               ? "bg-neutral-55 text-neutral-300 border cursor-not-allowed"
                               : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
                           }`}

@@ -121,6 +121,19 @@ body {
   @apply text-2xl text-neutral-600;
 }
 
+/* The chatbot's phone field is shorter than the registration forms' one. */
+.chatbot-phone .PhoneInputCountry {
+  @apply before:h-6 pr-1;
+}
+
+.chatbot-phone .PhoneInputCountrySelectArrow {
+  @apply text-base;
+}
+
+.chatbot-phone .PhoneInputInput {
+  @apply bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400;
+}
+
 /* phone input component end */
 
 /* radio button */

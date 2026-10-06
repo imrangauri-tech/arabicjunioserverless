@@ -1,9 +1,10 @@
 import React from "react";
 import { iconFor } from "@/lib/sectionIcons";
+import { DEFAULT_LANDING_SLUG, LEGACY_LANDING_SLUG } from "@/lib/landing";
 
-/** Default page (/trial-landing) is the Dubai page; "abu-dhabi" → "Abu Dhabi". */
+/** Default page (/trial-benefits) is the Dubai page; "abu-dhabi" → "Abu Dhabi". */
 export const cityFromSlug = (slug: string | undefined) =>
-  !slug || slug === "trial-landing" || slug === "landing"
+  !slug || slug === DEFAULT_LANDING_SLUG || slug === LEGACY_LANDING_SLUG || slug === "landing"
     ? "Dubai"
     : slug
         .split("-")
@@ -37,7 +38,7 @@ export function RichText({ text }: { text: string }) {
     <>
       {parts.map((part, index) =>
         part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-          <strong key={index} className="font-semibold text-[#0D1B2A]">
+          <strong key={index} className="font-semibold text-neutral-800">
             {part.slice(2, -2)}
           </strong>
         ) : (
@@ -50,7 +51,7 @@ export function RichText({ text }: { text: string }) {
 
 export function LandingIcon({
   name,
-  className = "w-5 h-5 text-[#FF5A1F]",
+  className = "w-5 h-5 text-orange-500",
 }: {
   name: string;
   className?: string;

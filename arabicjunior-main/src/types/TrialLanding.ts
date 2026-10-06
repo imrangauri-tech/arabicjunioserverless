@@ -1,5 +1,5 @@
 /**
- * City landing page content (/dubai, /sharjah, /trial-landing …), managed from
+ * City landing page content (/dubai, /sharjah, /trial-benefits …), managed from
  * Admin → Trial & Landing Pages. Any string may contain `{city}`, which the
  * page replaces with the page's city when it renders.
  */

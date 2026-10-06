@@ -8,7 +8,7 @@ import LandingWhyFamiliesChooseSection from "./components/LandingWhyFamiliesChoo
 import { getLandingPage } from "./getLandingPage";
 
 /**
- * City landing pages (/dubai, /sharjah, /trial-landing …). Every word and image
+ * City landing pages (/dubai, /sharjah, /trial-benefits …). Every word and image
  * comes from Admin → Trial & Landing Pages; a slug with no page there is a 404.
  */
 export default async function LandingPage({

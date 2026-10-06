@@ -19,8 +19,8 @@ const defaultHero = {
     "Our teachers are passionate, qualified and experienced in teaching Arabic to students of all ages and levels. They create engaging lessons that make learning effective, enjoyable and easy to understand.",
   primaryLabel: "Book a Free Trial",
   primaryUrl: "/register",
-  secondaryLabel: "Explore Our Courses",
-  secondaryUrl: "/pricing",
+  secondaryLabel: "Meet Our Teachers",
+  secondaryUrl: "/register",
 };
 
 const defaultHighlights = [

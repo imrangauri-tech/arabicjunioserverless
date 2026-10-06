@@ -280,8 +280,6 @@ export default function TeachersPageAdminPage() {
   const [heroSecondaryUrl, setHeroSecondaryUrl] = useState("");
   const [highlights, setHighlights] = useState<TeachersPageHighlight[]>([]);
 
-  const [heading, setHeading] = useState("");
-  const [introLines, setIntroLines] = useState<string[]>([]);
 
   const [whyChooseHeading, setWhyChooseHeading] = useState("");
   const [whyChooseHeadingHighlight, setWhyChooseHeadingHighlight] = useState("");
@@ -321,8 +319,6 @@ export default function TeachersPageAdminPage() {
         setHeroSecondaryUrl(d.heroSecondaryUrl || "");
         setHighlights(Array.isArray(d.highlights) ? d.highlights : []);
 
-        setHeading(d.heading || "");
-        setIntroLines(Array.isArray(d.introLines) ? d.introLines : []);
 
         setWhyChooseHeading(d.whyChooseHeading || "");
         setWhyChooseHeadingHighlight(d.whyChooseHeadingHighlight || "");
@@ -357,9 +353,6 @@ export default function TeachersPageAdminPage() {
     loadSettings();
   }, [loadSettings]);
 
-  const setLine = (index: number, value: string) =>
-    setIntroLines((prev) => prev.map((l, i) => (i === index ? value : l)));
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
@@ -387,8 +380,6 @@ export default function TeachersPageAdminPage() {
             heroSecondaryLabel,
             heroSecondaryUrl,
             highlights,
-            heading,
-            introLines: introLines.map((l) => l.trim()).filter(Boolean),
             whyChooseHeading,
             whyChooseHeadingHighlight,
             whyChooseSubheading,
@@ -731,60 +722,6 @@ export default function TeachersPageAdminPage() {
           defaultTheme="orange"
           hint="Numbered automatically from their order here, so reordering renumbers them. Four fit on one row."
         />
-      </section>
-
-      <section className="rounded-xl border border-neutral-200 bg-white p-5 space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-500">
-          Heading above the tutor grid
-        </h2>
-        <input
-          className={inputClass}
-          value={heading}
-          onChange={(e) => setHeading(e.target.value)}
-          placeholder="Meet our dynamic team or tutors"
-        />
-
-        <div className="flex items-center justify-between pt-2">
-          <h3 className="text-sm font-semibold text-neutral-700">
-            Text under the heading ({introLines.length})
-          </h3>
-          <button
-            type="button"
-            onClick={() => setIntroLines((p) => [...p, ""])}
-            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50"
-          >
-            <Plus className="w-4 h-4" /> Add paragraph
-          </button>
-        </div>
-        <p className="text-xs text-neutral-500">
-          This is the first prose search engines read on the page. Write for
-          parents first and mention what you actually teach.
-        </p>
-
-        {introLines.length === 0 && (
-          <p className="text-sm text-neutral-400">No paragraphs yet.</p>
-        )}
-
-        {introLines.map((line, index) => (
-          <div key={index} className="flex gap-2">
-            <textarea
-              className={`${inputClass} min-h-[84px]`}
-              value={line}
-              onChange={(e) => setLine(index, e.target.value)}
-              placeholder="Write one paragraph…"
-            />
-            <button
-              type="button"
-              onClick={() =>
-                setIntroLines((p) => p.filter((_, i) => i !== index))
-              }
-              aria-label={`Remove paragraph ${index + 1}`}
-              className="shrink-0 self-start rounded-lg border border-neutral-200 p-2 text-red-500 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
       </section>
 
       <section className="rounded-xl border border-neutral-200 bg-white p-5 space-y-4">

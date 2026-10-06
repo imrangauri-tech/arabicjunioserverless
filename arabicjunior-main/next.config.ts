@@ -17,6 +17,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // The default landing page moved from /trial-landing to /trial-benefits.
+  // Permanent, so search engines move their ranking across and old ads,
+  // WhatsApp messages and bookmarks keep working.
+  async redirects() {
+    return [
+      { source: "/trial-landing", destination: "/trial-benefits", permanent: true },
+    ];
+  },
   // Security Headers
   async headers() {
     return [

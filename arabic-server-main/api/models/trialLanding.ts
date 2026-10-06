@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 /**
- * City landing pages (/dubai, /sharjah, /trial-landing …).
+ * City landing pages (/dubai, /sharjah, /trial-benefits …).
  *
  * Every section is a nested object so the admin editor and the public page can
  * pass a whole section around as one prop. Any text may contain the token
@@ -342,7 +342,7 @@ const familiesSchema = new Schema<LandingFamilies>(
 const trialLandingSchema = new mongoose.Schema(
   {
     title: { type: String, default: "Free Trial Landing Page", required: true },
-    slug: { type: String, default: "trial-landing", unique: true },
+    slug: { type: String, default: "trial-benefits", unique: true },
     city: str(),
 
     // `default: () => ({})` makes a page saved before these sections existed

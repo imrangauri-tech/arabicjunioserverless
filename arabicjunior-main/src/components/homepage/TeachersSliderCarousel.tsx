@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Autoplay from "embla-carousel-autoplay";
 
 import {
@@ -12,6 +11,7 @@ import {
   CarouselPrevious,
 } from "../ui/carousel";
 import type { Teacher } from "@/types/Teacher";
+import TeacherAvatar from "../TeacherAvatar";
 
 /**
  * The interactive half of the homepage teachers slider. Its parent is a server
@@ -26,19 +26,17 @@ const TeachersSliderCarousel = ({ teachers }: { teachers: Teacher[] }) => (
     className="w-full max-w-[680px] mx-auto"
   >
     <CarouselContent>
-      {teachers.map((teacher) => (
+      {teachers.map((teacher, index) => (
         <CarouselItem
           key={teacher._id}
           className="basis-full md:basis-1/2 lg:basis-1/4"
         >
           <div className="flex flex-col items-center justify-center">
-            <div aria-label="teacher-image-wrapper" className="max-w-32 mb-6">
-              <Image
+            <div aria-label="teacher-image-wrapper" className="w-32 mb-6">
+              <TeacherAvatar
                 src={teacher.image}
-                width={256}
-                height={256}
+                index={index}
                 alt={`${teacher.name} — Arabic Juniors teacher`}
-                className="rounded-full aspect-square object-cover"
               />
             </div>
             <h4 className="text-lg font-semibold text-white text-center mb-1">
